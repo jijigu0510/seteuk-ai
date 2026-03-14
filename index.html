@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 입학사정관: 세특 심층 분석 시스템</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Pretendard Font -->
+    <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+    <style>
+        body {
+            font-family: 'Pretendard', sans-serif;
+            background-color: #f4f7fb;
+        }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+        }
+        
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #e2e8f0;
+            border-top-color: #2563eb;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        
+        .fade-in { animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .progress-fill {
+            transition: width 1.5s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+    </style>
+</head>
+<body class="text-slate-800 antialiased min-h-screen flex flex-col selection:bg-blue-100 selection:text-blue-900">
+
+    <!-- Header -->
+    <header class="bg-white border-b border-slate-200 shadow-sm sticky top-0 z-20">
+        <div class="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-md shadow-blue-200">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-extrabold text-slate-900 tracking-tight">AI 입학사정관 <span class="text-blue-600 font-black">PRO</span></h1>
+                    <p class="text-sm text-slate-500 font-medium">학생부종합전형 3대 공통 평가요소 기반 심층 문맥 분석</p>
+                </div>
+            </div>
+            <div class="hidden md:flex items-center gap-2 text-sm font-semibold text-blue-700 bg-blue-50 px-4 py-2 rounded-full border border-blue-100">
+                <span class="relative flex h-3 w-3">
+                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                  <span class="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span>
+                </span>
+                AI 엔진 가동 중
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-grow max-w-6xl mx-auto w-full px-6 py-8 flex flex-col gap-8">
+        
+        <!-- Input Section -->
+        <section class="glass-panel rounded-2xl shadow-sm p-8">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                <div class="md:col-span-1">
+                    <label for="deptSelect" class="block text-sm font-bold text-slate-700 mb-2">지원 희망 학과</label>
+                    <div class="relative">
+                        <select id="deptSelect" class="block w-full appearance-none bg-white border border-slate-300 text-slate-700 py-3 px-4 pr-8 rounded-xl leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow font-medium cursor-pointer">
+                            <option value="컴퓨터공학과" selected>컴퓨터공학과</option>
+                            <option value="경영학과">경영학과</option>
+                            <option value="생명과학과">생명과학과</option>
+                            <option value="기계공학과">기계공학과</option>
+                            <option value="국어국문학과">국어국문학과</option>
+                            <option value="경제학과">경제학과</option>
+                            <option value="전자공학과">전자공학과</option>
+                            <option value="화학공학과">화학공학과</option>
+                            <option value="심리학과">심리학과</option>
+                            <option value="미디어커뮤니케이션학과">미디어커뮤니케이션학과</option>
+                        </select>
+                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-500">
+                            <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="md:col-span-2 bg-blue-50 rounded-xl p-4 flex gap-3 border border-blue-100 items-start">
+                    <svg class="w-6 h-6 text-blue-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    <div>
+                        <h4 class="text-sm font-bold text-blue-900">심층 문맥 분석 가이드</h4>
+                        <p class="text-xs text-blue-800 mt-1 leading-relaxed">단순 키워드 나열이 아닌 <strong>'동기 - 탐구 과정 - 결과 - 성장'</strong>의 맥락을 분석합니다. 선택한 학과와의 연계성, 자기주도적 문제해결 과정, 갈등 관리 리더십이 문장에 구체적으로 드러날수록 높은 평가를 받습니다.</p>
+                    </div>
+                </div>
+            </div>
+            
+            <label for="seTeukInput" class="block text-sm font-bold text-slate-700 mb-2">학교생활기록부 세부능력 및 특기사항 입력</label>
+            <textarea id="seTeukInput" class="w-full h-56 p-5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none resize-none text-slate-700 leading-relaxed text-base transition-shadow" placeholder="학생부 세특 내용을 붙여넣으세요..."></textarea>
+            
+            <div class="mt-6 flex justify-end">
+                <button id="analyzeBtn" class="bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold py-3.5 px-8 rounded-xl shadow-lg shadow-blue-200 transition-all flex items-center gap-2 transform hover:-translate-y-0.5">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                    세특 심층 분석 및 채점하기
+                </button>
+            </div>
+        </section>
+
+        <!-- Loading State -->
+        <section id="loadingSection" class="hidden flex-col items-center justify-center py-20 bg-white rounded-2xl border border-slate-200 shadow-sm">
+            <div class="spinner mb-6"></div>
+            <h3 class="text-lg font-bold text-slate-800 mb-2">AI 입학사정관이 문맥을 분석 중입니다...</h3>
+            <p class="text-sm text-slate-500">동기, 탐구 과정, 전공 연계성, 리더십 요소를 다각도로 평가하고 있습니다.</p>
+        </section>
+
+        <!-- Results Dashboard -->
+        <section id="resultSection" class="hidden flex flex-col gap-6 fade-in">
+            <div class="bg-gradient-to-r from-blue-900 to-indigo-800 rounded-2xl p-8 text-white shadow-lg relative overflow-hidden">
+                <div class="absolute -top-20 -right-20 w-64 h-64 bg-white opacity-5 rounded-full blur-2xl"></div>
+                <div class="absolute -bottom-20 -left-20 w-48 h-48 bg-blue-400 opacity-10 rounded-full blur-xl"></div>
+                
+                <div class="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
+                    <div class="w-full md:w-2/3">
+                        <div class="flex items-center gap-3 mb-2">
+                            <span class="bg-blue-500/30 border border-blue-400/30 text-blue-100 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">Overall Fit</span>
+                            <span id="resultDeptName" class="text-blue-200 font-medium text-sm">컴퓨터공학과</span>
+                        </div>
+                        <h2 class="text-3xl font-extrabold mb-4 leading-tight">종합 전공 적합도 평가</h2>
+                        <div class="w-full bg-slate-900/50 rounded-full h-4 mb-3 border border-slate-700/50 overflow-hidden">
+                            <div id="overallProgressBar" class="bg-gradient-to-r from-blue-400 to-cyan-300 h-full rounded-full progress-fill w-0"></div>
+                        </div>
+                        <p id="overallComment" class="text-blue-100/80 text-sm leading-relaxed"></p>
+                    </div>
+                    <div class="w-full md:w-1/3 flex flex-col items-center justify-center border-l border-white/10 pl-0 md:pl-8">
+                        <div class="text-6xl font-black tracking-tighter" id="overallScoreText">0<span class="text-3xl text-blue-300">%</span></div>
+                        <div class="mt-2 text-xl font-bold px-6 py-1 bg-white text-blue-900 rounded-full shadow-inner" id="overallGradeText">Wait...</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Academic Card -->
+                <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 cursor-pointer group flex flex-col h-full" onclick="openModal('academic')">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="p-3.5 bg-indigo-50 text-indigo-600 rounded-xl group-hover:bg-indigo-600 group-hover:text-white transition-colors duration-300">
+                            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+                        </div>
+                        <div id="grade-academic" class="text-3xl font-black text-indigo-600">-</div>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-800 mb-2">학업역량</h3>
+                    <p class="text-sm text-slate-500 mb-6 flex-grow">지적 호기심, 심화 탐구, 논리적 사고, 문제해결 과정</p>
+                    <div class="pt-4 border-t border-slate-100 flex items-center justify-between">
+                        <span class="text-xs font-semibold text-slate-400 group-hover:text-indigo-500 transition-colors">상세 판단 근거 보기</span>
+                        <svg class="w-4 h-4 text-slate-300 group-hover:text-indigo-500 transition-colors transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                    </div>
+                </div>
+
+                <!-- Career Card -->
+                <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 cursor-pointer group flex flex-col h-full" onclick="openModal('career')">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="p-3.5 bg-emerald-50 text-emerald-600 rounded-xl group-hover:bg-emerald-600 group-hover:text-white transition-colors duration-300">
+                            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                        </div>
+                        <div id="grade-career" class="text-3xl font-black text-emerald-600">-</div>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-800 mb-2">진로역량</h3>
+                    <p class="text-sm text-slate-500 mb-6 flex-grow">전공(계열) 관련 교과 성취, 전공 탐색 경험, 지식 확장</p>
+                    <div class="pt-4 border-t border-slate-100 flex items-center justify-between">
+                        <span class="text-xs font-semibold text-slate-400 group-hover:text-emerald-500 transition-colors">상세 판단 근거 보기</span>
+                        <svg class="w-4 h-4 text-slate-300 group-hover:text-emerald-500 transition-colors transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                    </div>
+                </div>
+
+                <!-- Community Card -->
+                <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 cursor-pointer group flex flex-col h-full" onclick="openModal('community')">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="p-3.5 bg-amber-50 text-amber-600 rounded-xl group-hover:bg-amber-500 group-hover:text-white transition-colors duration-300">
+                            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                        </div>
+                        <div id="grade-community" class="text-3xl font-black text-amber-500">-</div>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-800 mb-2">공동체역량</h3>
+                    <p class="text-sm text-slate-500 mb-6 flex-grow">협업과 소통, 나눔과 배려, 갈등 관리, 성숙한 리더십</p>
+                    <div class="pt-4 border-t border-slate-100 flex items-center justify-between">
+                        <span class="text-xs font-semibold text-slate-400 group-hover:text-amber-500 transition-colors">상세 판단 근거 보기</span>
+                        <svg class="w-4 h-4 text-slate-300 group-hover:text-amber-500 transition-colors transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Modal Overlay -->
+    <div id="modalOverlay" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden z-40 transition-opacity duration-300 opacity-0" onclick="closeModal()"></div>
+    
+    <!-- Modal Content -->
+    <div id="detailModal" class="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-11/12 max-w-5xl bg-white rounded-2xl shadow-2xl hidden z-50 flex-col max-h-[90vh] scale-95 opacity-0 transition-all duration-300">
+        <div class="flex justify-between items-center px-8 py-6 border-b border-slate-100 bg-slate-50/50 rounded-t-2xl">
+            <div class="flex items-center gap-3">
+                <div id="modalIcon" class="w-10 h-10 rounded-lg flex items-center justify-center text-white"></div>
+                <div>
+                    <h3 id="modalTitle" class="text-2xl font-black text-slate-900">역량 상세 분석</h3>
+                    <p id="modalSubtitle" class="text-sm font-medium text-slate-500 mt-1">입학사정관 심층 문맥 해석 결과</p>
+                </div>
+            </div>
+            <button onclick="closeModal()" class="text-slate-400 hover:text-slate-700 hover:bg-slate-200 p-2.5 rounded-xl transition-colors">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
+        
+        <div class="p-8 overflow-y-auto bg-white">
+            <div class="border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                <table class="min-w-full divide-y divide-slate-200">
+                    <thead class="bg-slate-50">
+                        <tr>
+                            <th scope="col" class="px-6 py-4 text-left text-sm font-bold text-slate-800 w-1/6 border-r border-slate-200">평가 세부 항목</th>
+                            <th scope="col" class="px-6 py-4 text-left text-sm font-bold text-slate-800 w-2/5 border-r border-slate-200">세특 추출 문장 (근거)</th>
+                            <th scope="col" class="px-6 py-4 text-left text-sm font-bold text-slate-800 w-2/5">사정관 심층 코멘트 (문맥 해석)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="modalTableBody" class="bg-white divide-y divide-slate-200"></tbody>
+                </table>
+            </div>
+            
+            <div id="emptyState" class="hidden text-center py-16 bg-slate-50 rounded-xl mt-4 border border-dashed border-slate-300">
+                <svg class="w-16 h-16 text-slate-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                <h4 class="text-lg font-bold text-slate-700 mb-1">관련 문맥을 찾을 수 없습니다</h4>
+                <p class="text-slate-500 font-medium text-sm">해당 역량과 유의미하게 연결되는 문장이나 활동 내역이 텍스트에 부족합니다.<br>더 구체적인 활동 과정이나 동기를 추가하는 것을 권장합니다.</p>
+            </div>
+        </div>
+        
+        <div class="px-8 py-5 border-t border-slate-100 bg-slate-50 rounded-b-2xl flex justify-between items-center">
+            <p class="text-xs text-slate-400 font-medium">* 본 결과는 가상의 AI 분석 엔진에 기반한 참고용 데이터입니다.</p>
+            <button onclick="closeModal()" class="px-6 py-2.5 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-xl transition-all shadow-sm">확인 및 닫기</button>
+        </div>
+    </div>
+
+    <!-- Script for Logic -->
+    <script>
+        let analysisResults = { academic: [], career: [], community: [] };
+        
+        const seTeukInput = document.getElementById('seTeukInput');
+        const deptSelect = document.getElementById('deptSelect');
+        const analyzeBtn = document.getElementById('analyzeBtn');
+        const loadingSection = document.getElementById('loadingSection');
+        const resultSection = document.getElementById('resultSection');
+        const modal = document.getElementById('detailModal');
+        const overlay = document.getElementById('modalOverlay');
+
+        seTeukInput.value = `수학 시간에 배운 행렬 연산을 바탕으로, '효율적인 최단 경로 탐색 알고리즘'에 대한 지적 호기심을 가짐. 단순한 개념 이해에 그치지 않고, 파이썬(Python) 프로그래밍을 활용해 다익스트라 알고리즘을 직접 구현해 보며 데이터 처리 속도를 비교하는 심화 탐구를 자기주도적으로 진행함. 
+이 과정에서 발생하는 무한 루프 등의 논리적 오류를 스스로 분석하고 수정해 나가는 탁월한 문제해결력을 보여줌.
+또한, '스마트시티 교통 최적화' 과학 탐구 프로젝트의 모둠장으로서, 실험 방향성에 대한 조원들 간의 갈등과 이견이 발생했을 때 각자의 주장을 경청하고 객관적인 데이터에 기반한 타협점을 성공적으로 조율해 냄. 팀원들의 역량에 맞춰 역할을 분담하고 협력을 이끌어내는 등, 공동의 목표를 위해 헌신하는 성숙한 리더십이 돋보임.`;
+
+        analyzeBtn.addEventListener('click', async () => {
+            const text = seTeukInput.value.trim();
+            const selectedDept = deptSelect.value;
+            
+            if(!text || text.length < 30) {
+                alert("정확한 문맥 분석을 위해 세특 내용을 충분히(30자 이상) 입력해주세요.");
+                return;
+            }
+
+            resultSection.classList.add('hidden');
+            loadingSection.classList.remove('hidden');
+            loadingSection.classList.add('flex');
+            
+            try {
+                // ★ 중요: 인터넷 주소에 상관없이 동작하도록 '/api/analyze' 로 수정됨!
+                const response = await fetch('/api/analyze', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text: text, dept: selectedDept })
+                });
+
+                if (!response.ok) throw new Error(`서버 에러: ${response.status}`);
+
+                const data = await response.json();
+
+                analysisResults = {
+                    academic: data.academic || [],
+                    career: data.career || [],
+                    community: data.community || []
+                };
+
+                renderDashboard(selectedDept, data);
+                
+                loadingSection.classList.add('hidden');
+                loadingSection.classList.remove('flex');
+                resultSection.classList.remove('hidden');
+                resultSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+            } catch (error) {
+                console.error("API 호출 오류:", error);
+                alert("분석 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
+                loadingSection.classList.add('hidden');
+                loadingSection.classList.remove('flex');
+            }
+        });
+
+        function renderDashboard(dept, data) {
+            document.getElementById('resultDeptName').textContent = dept;
+            const score = data.overallScore || 0;
+            const grade = data.overallGrade || 'C';
+            const comment = data.overallComment || '평가 결과가 없습니다.';
+
+            setTimeout(() => {
+                document.getElementById('overallScoreText').innerHTML = `${score}<span class="text-3xl text-blue-300">%</span>`;
+                document.getElementById('overallGradeText').textContent = `${grade} Grade`;
+                document.getElementById('overallComment').textContent = comment;
+                document.getElementById('overallProgressBar').style.width = `${score}%`;
+            }, 100);
+
+            updateCard('academic', analysisResults.academic.length, 2);
+            updateCard('career', analysisResults.career.length, 2);
+            updateCard('community', analysisResults.community.length, 2);
+        }
+
+        function updateCard(type, count, targetCount) {
+            let grade = 'C';
+            let textColor = 'text-slate-400';
+            
+            if (count >= targetCount) {
+                grade = 'A';
+                if(type === 'academic') textColor = 'text-indigo-600';
+                if(type === 'career') textColor = 'text-emerald-600';
+                if(type === 'community') textColor = 'text-amber-500';
+            } else if (count >= 1) {
+                grade = 'B';
+                if(type === 'academic') textColor = 'text-indigo-400';
+                if(type === 'career') textColor = 'text-emerald-400';
+                if(type === 'community') textColor = 'text-amber-400';
+            }
+            
+            const el = document.getElementById(`grade-${type}`);
+            el.textContent = grade;
+            el.className = `text-4xl font-black ${textColor} transition-colors duration-500`;
+        }
+
+        const modalConfig = {
+            academic: { title: '학업역량 심층 분석', bg: 'bg-indigo-600', icon: `<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>` },
+            career: { title: '진로역량(전공적합성) 심층 분석', bg: 'bg-emerald-600', icon: `<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>` },
+            community: { title: '공동체역량 심층 분석', bg: 'bg-amber-500', icon: `<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>` }
+        };
+
+        function openModal(type) {
+            const data = analysisResults[type];
+            const config = modalConfig[type];
+
+            document.getElementById('modalTitle').textContent = config.title;
+            const iconContainer = document.getElementById('modalIcon');
+            iconContainer.className = `w-12 h-12 rounded-xl flex items-center justify-center text-white shadow-md ${config.bg}`;
+            iconContainer.innerHTML = config.icon;
+
+            const tbody = document.getElementById('modalTableBody');
+            const emptyState = document.getElementById('emptyState');
+            tbody.innerHTML = '';
+
+            if(data && data.length > 0) {
+                emptyState.classList.add('hidden');
+                
+                data.forEach(item => {
+                    let highlightedText = item.extracted;
+                    if (item.keyword && item.extracted.includes(item.keyword)) {
+                        const regex = new RegExp(`(${item.keyword})`, 'gi');
+                        highlightedText = item.extracted.replace(regex, `<span class="bg-blue-100 text-blue-800 font-bold px-1.5 py-0.5 rounded border border-blue-200 shadow-sm mx-0.5">$1</span>`);
+                    }
+
+                    const tr = document.createElement('tr');
+                    tr.className = "hover:bg-slate-50/80 transition-colors group";
+                    tr.innerHTML = `
+                        <td class="px-6 py-5 align-top">
+                            <span class="inline-flex items-center px-2.5 py-1 rounded-md text-sm font-bold bg-slate-100 text-slate-700 border border-slate-200">
+                                ${item.item}
+                            </span>
+                        </td>
+                        <td class="px-6 py-5 align-top text-sm text-slate-700 leading-relaxed font-medium">
+                            <div class="relative pl-3 border-l-2 border-slate-300 group-hover:border-blue-400 transition-colors">
+                                ${highlightedText}
+                            </div>
+                        </td>
+                        <td class="px-6 py-5 align-top">
+                            <div class="bg-blue-50/50 rounded-xl p-4 border border-blue-100/50">
+                                <p class="text-sm text-blue-900 leading-relaxed font-medium">
+                                    <svg class="w-4 h-4 inline-block mr-1 text-blue-500 -mt-1" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path></svg>
+                                    ${item.comment}
+                                </p>
+                            </div>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } else {
+                emptyState.classList.remove('hidden');
+            }
+
+            overlay.classList.remove('hidden');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            
+            setTimeout(() => {
+                overlay.classList.remove('opacity-0');
+                modal.classList.remove('opacity-0', 'scale-95');
+                modal.classList.add('opacity-100', 'scale-100');
+            }, 10);
+        }
+
+        function closeModal() {
+            overlay.classList.add('opacity-0');
+            modal.classList.remove('opacity-100', 'scale-100');
+            modal.classList.add('opacity-0', 'scale-95');
+            
+            setTimeout(() => {
+                overlay.classList.add('hidden');
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }, 300);
+        }
+    </script>
+</body>
+</html>
