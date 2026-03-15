@@ -14,10 +14,16 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 // index.html 등 정적 파일 제공
 app.use(express.static(path.join(__dirname)));
 
-// 환경 변수에서 API 키를 가져옵니다.
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+// 환경 변수에서 API 키를 가져옵니다. (안전 장치 추가)
+const apiKey = process.env.GEMINI_API_KEY || "API_KEY_NOT_SET";
+const genAI = new GoogleGenerativeAI(apiKey);
 
 app.post('/api/analyze', async (req, res) => {
+    // API 키 누락 시 서버 크래시 방지
+    if (apiKey === "API_KEY_NOT_SET") {
+        return res.status(500).json({ error: 'Render 환경변수에 GEMINI_API_KEY가 설정되지 않았습니다.' });
+    }
+
     const { major, text } = req.body;
 
     if (!major || !text) {
@@ -68,6 +74,7 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-app.listen(port, () => {
+// 호스트를 '0.0.0.0'으로 명시적으로 지정 (Render 타임아웃 해결의 핵심!)
+app.listen(port, '0.0.0.0', () => {
     console.log(`✅ 서버가 포트 ${port}에서 실행 중입니다.`);
 });
