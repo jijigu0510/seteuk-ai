@@ -37,9 +37,9 @@ app.post('/api/analyze', async (req, res) => {
     try {
         const genAI = new GoogleGenerativeAI(apiKey);
         
-        // 💡 [핵심] responseMimeType을 설정하여 무조건 JSON으로만 응답하도록 강제
+        // 💡 [수정] 404 Not Found 에러 방지를 위해 모델명을 'gemini-1.5-flash-latest'로 변경했습니다.
         const model = genAI.getGenerativeModel({ 
-            model: 'gemini-1.5-flash',
+            model: 'gemini-1.5-flash-latest',
             generationConfig: {
                 responseMimeType: "application/json"
             }
