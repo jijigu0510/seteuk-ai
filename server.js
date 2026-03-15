@@ -88,13 +88,8 @@ app.post('/api/analyze', async (req, res) => {
     }
 });
 
-// 루트 접속
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
-});
-
-// 모든 경로 처리 (새로고침 에러 방지 - Express 5.x 호환 문법으로 수정)
-app.get('/(.*)', (req, res) => {
+// 루트 접속 및 모든 경로 처리 (새로고침 에러 방지 - Express 5.x 정규식 문법으로 완벽 수정)
+app.get(/.*/, (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
