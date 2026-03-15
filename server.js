@@ -76,10 +76,20 @@ ${text}
 `;
 
         const result = await model.generateContent(fullPrompt);
-        const rawText = result.response.text();
+        let rawText = result.response.text();
         console.log("🤖 [AI 원본 응답 수신 완료]");
         
-        const parsedData = JSON.parse(rawText);
+        // 💡 [추가] AI가 무시하고 마크다운(```json)을 포함해 보낼 경우를 완벽하게 대비
+        rawText = rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
+        
+        let parsedData;
+        try {
+            parsedData = JSON.parse(rawText);
+        } catch (parseError) {
+            console.error("❌ [JSON 파싱 에러] AI 원본 텍스트:\n", rawText);
+            throw new Error("AI 응답을 처리하는 중 데이터 형식이 어긋났습니다. (JSON Parse Error)");
+        }
+
         console.log(`✅ [분석 파싱 완료] ${targetMajor} 맞춤 평가 성공`);
         res.json(parsedData);
 
