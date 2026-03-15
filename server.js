@@ -37,14 +37,6 @@ app.post('/api/analyze', async (req, res) => {
     try {
         const genAI = new GoogleGenerativeAI(apiKey);
         
-        // 💡 [수정] 404 Not Found 에러 방지를 위해 모델명을 'gemini-1.5-flash-latest'로 변경했습니다.
-        const model = genAI.getGenerativeModel({ 
-            model: 'gemini-1.5-flash-latest',
-            generationConfig: {
-                responseMimeType: "application/json"
-            }
-        });
-        
         const fullPrompt = `당신은 대한민국 최상위 12개 대학의 학생부종합전형을 심층 평가하는 수석 입학사정관 시스템입니다.
 지원 학과(${targetMajor})의 특성과 각 대학의 인재상/평가 룰셋을 반영하여 학생의 서류를 냉정하게 평가하십시오.
 
@@ -75,7 +67,25 @@ app.post('/api/analyze', async (req, res) => {
 ${text}
 `;
 
-        const result = await model.generateContent(fullPrompt);
+        let result;
+        
+        try {
+            // 💡 [수정] 1순위: 가장 성능이 좋은 1.5 Pro 모델 시도
+            const model = genAI.getGenerativeModel({ 
+                model: 'gemini-1.5-pro',
+                generationConfig: {
+                    responseMimeType: "application/json"
+                }
+            });
+            result = await model.generateContent(fullPrompt);
+        } catch (modelErr) {
+            console.warn(`⚠️ [경고] 1.5 모델 접근 불가(${modelErr.message}). 기본 gemini-pro 모델로 우회합니다.`);
+            // 💡 [수정] 2순위: API 키 제한 등으로 1.5 버전 접근 불가 시 가장 범용적인 구버전 모델 사용
+            // (gemini-pro는 responseMimeType 지원이 불안정하므로 제외하고 프롬프트 지시로만 JSON을 유도합니다.)
+            const fallbackModel = genAI.getGenerativeModel({ model: 'gemini-pro' });
+            result = await fallbackModel.generateContent(fullPrompt);
+        }
+
         let rawText = result.response.text();
         console.log("🤖 [AI 원본 응답 수신 완료]");
         
@@ -94,7 +104,7 @@ ${text}
         res.json(parsedData);
 
     } catch (error) {
-        console.error('❌ [Gemini API / 파싱 에러]:', error);
+        console.error('❌ [Gemini API / 종합 에러]:', error);
         res.status(500).json({ error: `AI 분석 중 서버 오류 발생: ${error.message}` });
     }
 });
