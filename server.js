@@ -67,29 +67,49 @@ app.post('/api/analyze', async (req, res) => {
 ${text}
 `;
 
-        let result;
-        
-        try {
-            // 💡 [수정] 1순위: 가장 성능이 좋은 1.5 Pro 모델 시도
-            const model = genAI.getGenerativeModel({ 
-                model: 'gemini-1.5-pro',
-                generationConfig: {
-                    responseMimeType: "application/json"
-                }
-            });
-            result = await model.generateContent(fullPrompt);
-        } catch (modelErr) {
-            console.warn(`⚠️ [경고] 1.5 모델 접근 불가(${modelErr.message}). 기본 gemini-pro 모델로 우회합니다.`);
-            // 💡 [수정] 2순위: API 키 제한 등으로 1.5 버전 접근 불가 시 가장 범용적인 구버전 모델 사용
-            // (gemini-pro는 responseMimeType 지원이 불안정하므로 제외하고 프롬프트 지시로만 JSON을 유도합니다.)
-            const fallbackModel = genAI.getGenerativeModel({ model: 'gemini-pro' });
-            result = await fallbackModel.generateContent(fullPrompt);
+        let result = null;
+        let lastError = null;
+
+        // 💡 [궁극적 해결책] 구글 API 키 파편화 문제 해결
+        // 현재 구글에서 서비스 중인 모든 주요 모델을 배열로 지정합니다.
+        const modelsToTry = [
+            'gemini-2.5-flash',
+            'gemini-2.0-flash',
+            'gemini-1.5-flash',
+            'gemini-1.5-pro',
+            'gemini-1.0-pro'
+        ];
+
+        // 배열을 순회하며 접속 권한이 있는 모델을 찾을 때까지 시도합니다.
+        for (const modelName of modelsToTry) {
+            try {
+                console.log(`🤖 [모델 테스트] ${modelName} 시도 중...`);
+                
+                // 1.0-pro의 경우 responseMimeType 설정 시 에러가 날 수 있어 방어 코드를 작성합니다.
+                const config = modelName.includes('1.0-pro') 
+                    ? {} 
+                    : { generationConfig: { responseMimeType: "application/json" } };
+                    
+                const model = genAI.getGenerativeModel({ model: modelName, ...config });
+                result = await model.generateContent(fullPrompt);
+                
+                console.log(`✅ [모델 성공] ${modelName} 모델로 분석 권한 확인 및 완료!`);
+                break; // 통과했으므로 루프 즉시 종료
+            } catch (modelErr) {
+                console.warn(`⚠️ [경고] ${modelName} 불가 (${modelErr.message}). 다음 모델을 찾습니다.`);
+                lastError = modelErr;
+            }
+        }
+
+        // 모든 모델이 에러(404, 권한 부족 등)를 뱉었을 때의 최후 예외처리
+        if (!result) {
+            throw new Error(`사용 가능한 모델이 없습니다. API 키 상태를 확인하세요. (최종 에러: ${lastError.message})`);
         }
 
         let rawText = result.response.text();
         console.log("🤖 [AI 원본 응답 수신 완료]");
         
-        // 💡 [추가] AI가 무시하고 마크다운(```json)을 포함해 보낼 경우를 완벽하게 대비
+        // 💡 AI가 무시하고 마크다운(```json)을 포함해 보낼 경우를 완벽하게 대비
         rawText = rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
         
         let parsedData;
@@ -109,8 +129,7 @@ ${text}
     }
 });
 
-// 💡 [수정] Express 5.x 라우팅 에러 해결: '*' 문자열 대신 정규식(/.*/) 사용
-// Express 5 에서는 '*' 단독 사용 시 'Missing parameter name' 에러가 발생합니다.
+// 💡 Express 5.x 라우팅 에러 해결: '*' 문자열 대신 정규식(/.*/) 사용
 app.get(/.*/, (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
