@@ -26,7 +26,6 @@ app.post('/api/analyze', async (req, res) => {
         return res.status(500).json({ error: '서버 환경변수에 API 키가 설정되지 않았습니다.' });
     }
 
-    // 💡 [버그 수정 완료] 프론트엔드가 보내는 'major' 변수를 정확히 받도록 수정했습니다.
     const targetMajor = req.body.major;
     const text = req.body.text;
 
@@ -37,7 +36,6 @@ app.post('/api/analyze', async (req, res) => {
 
     try {
         const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
         
         // 12개 대학 룰셋 적용 프롬프트
         const prompt = `
@@ -65,21 +63,32 @@ app.post('/api/analyze', async (req, res) => {
   "community": { "score": 88, "grade": "A", "details": [{"item": "리더십", "extracted": "원문 문장", "comment": "해석"}] }
 }`;
 
+        // 💡 [수정] systemInstruction을 getGenerativeModel 내부로 이동 (SDK 호환성 오류 완벽 해결)
+        const model = genAI.getGenerativeModel({ 
+            model: 'gemini-1.5-flash',
+            systemInstruction: prompt
+        });
+
         const userQuery = `지원 학과: ${targetMajor}\n\n[학생 생기부 텍스트]\n${text}`;
         
         const result = await model.generateContent({
             contents: [{ role: "user", parts: [{ text: userQuery }] }],
-            systemInstruction: { parts: [{ text: prompt }] },
             generationConfig: { responseMimeType: "application/json" }
         });
 
         let rawText = result.response.text();
+        console.log("🤖 [AI 원본 응답 수신 완료]");
         
-        // 마크다운 잔재물 제거 필터
-        rawText = rawText.replace(/```json/gi, '').replace(/```/gi, '').trim();
+        // 💡 [수정] 무적의 JSON 추출기: AI가 마크다운이나 헛소리를 섞어 보내도 중괄호 부분만 강제 추출
+        const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+            rawText = jsonMatch[0];
+        } else {
+            throw new Error("AI가 유효한 JSON 데이터를 반환하지 않았습니다.");
+        }
         
         const parsedData = JSON.parse(rawText);
-        console.log(`✅ [분석 완료] ${targetMajor} 맞춤 평가 성공`);
+        console.log(`✅ [분석 파싱 완료] ${targetMajor} 맞춤 평가 성공`);
         res.json(parsedData);
 
     } catch (error) {
@@ -88,7 +97,7 @@ app.post('/api/analyze', async (req, res) => {
     }
 });
 
-// 루트 접속 및 모든 경로 처리 (새로고침 에러 방지 - Express 5.x 정규식 문법으로 완벽 수정)
+// 루트 접속 및 모든 경로 처리 (새로고침 에러 방지 - Express 5.x 정규식 문법)
 app.get(/.*/, (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
