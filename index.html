@@ -4,589 +4,324 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI 입학사정관: 세특 종합 심층 분석 시스템</title>
+    
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Pretendard Font -->
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
     
-    <!-- Excel 파싱 & PDF 생성 라이브러리 (안정적인 버전으로 교체) -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <!-- Excel 파싱 & PDF 생성 라이브러리 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
     <style>
-        body { font-family: 'Pretendard', sans-serif; background-color: #f4f7fb; }
+        body { font-family: 'Pretendard', sans-serif; background-color: #f8fafc; }
         ::-webkit-scrollbar { width: 8px; height: 8px; }
         ::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
         
-        .glass-panel { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border: 1px solid rgba(226, 232, 240, 0.8); }
-        .spinner { width: 50px; height: 50px; border: 4px solid #e2e8f0; border-top-color: #2563eb; border-radius: 50%; animation: spin 1s linear infinite; }
+        .spinner { width: 40px; height: 40px; border: 4px solid #e2e8f0; border-top-color: #3b82f6; border-radius: 50%; animation: spin 1s linear infinite; }
         @keyframes spin { 100% { transform: rotate(360deg); } }
-        .fade-in { animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
-        .progress-fill { transition: width 1.5s cubic-bezier(0.22, 1, 0.36, 1); }
-        select:disabled { background-color: #f8fafc; color: #94a3b8; cursor: not-allowed; }
         
-        .pdf-hide { display: block; }
-        .pdf-mode .pdf-hide { display: none !important; }
-        .pdf-mode { padding: 20px; background-color: white; }
+        .fade-in { animation: fadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .progress-fill { transition: width 1.5s cubic-bezier(0.22, 1, 0.36, 1); }
+        .card-hover { transition: all 0.3s ease; }
+        .card-hover:hover { transform: translateY(-4px); box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1); }
+        
+        /* PDF 출력용 숨김/표시 속성 */
+        .pdf-only-header { display: none; }
     </style>
 </head>
-<body class="text-slate-800 antialiased min-h-screen flex flex-col selection:bg-blue-100 selection:text-blue-900">
+<body class="text-slate-800 antialiased min-h-screen flex flex-col selection:bg-blue-200 selection:text-blue-900">
 
+    <!-- Header -->
     <header class="bg-white border-b border-slate-200 shadow-sm sticky top-0 z-20">
         <div class="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
             <div class="flex items-center gap-3">
-                <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-md shadow-blue-200">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                <div class="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-xl flex items-center justify-center text-white shadow-md">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                 </div>
                 <div>
                     <h1 class="text-2xl font-extrabold text-slate-900 tracking-tight">AI 입학사정관 <span class="text-blue-600 font-black">PRO</span></h1>
-                    <p class="text-sm text-slate-500 font-medium">학생부종합전형 전체 세특 융합 평가 시스템 (서버리스 독립형)</p>
+                    <p class="text-sm text-slate-500 font-medium">학생부종합전형 전체 세특 융합 평가 및 PDF 리포트</p>
                 </div>
             </div>
-            
-            <div class="hidden md:flex flex-col items-end justify-center">
-                <span class="text-xs text-slate-400 tracking-widest uppercase mb-0.5">Designed & Developed by</span>
-                <span class="text-[15px] font-bold text-slate-700 font-serif italic relative inline-block group cursor-default">
-                    부안고등학교 교사 <span class="text-blue-600">김진석</span>
-                    <span class="absolute -bottom-1 left-0 w-full h-[2px] bg-blue-200 transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left"></span>
-                </span>
+            <div class="hidden md:flex flex-col items-end">
+                <button onclick="resetDB()" class="text-xs font-bold text-rose-500 bg-rose-50 hover:bg-rose-100 px-3 py-1.5 rounded-lg transition-colors border border-rose-200">
+                    DB 전체 초기화
+                </button>
             </div>
         </div>
     </header>
 
     <main class="flex-grow max-w-6xl mx-auto w-full px-6 py-8 flex flex-col gap-6">
         
-        <!-- 학생 데이터베이스 관리 섹션 (로컬 스토리지 연동) -->
+        <!-- STEP 1: Data Upload Section -->
         <section class="bg-indigo-50 border border-indigo-100 rounded-2xl p-6 shadow-sm">
-            <div class="flex flex-col md:flex-row items-center justify-between gap-4 mb-4">
-                <div class="flex items-center gap-3">
-                    <div class="p-2 bg-indigo-600 text-white rounded-lg flex-shrink-0">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"></path></svg>
-                    </div>
-                    <div>
-                        <h2 class="text-lg font-bold text-indigo-900">학생 데이터베이스 센터 (로컬 저장소)</h2>
-                        <p class="text-sm text-indigo-700">이름을 기준으로 데이터가 자동 병합됩니다. 각 항목별 파일을 자유롭게 업로드하세요.</p>
-                    </div>
-                </div>
-                <div class="flex gap-2">
-                    <button onclick="openConfirmModal()" class="text-xs font-semibold text-rose-600 bg-rose-100 hover:bg-rose-200 px-3 py-1.5 rounded-lg transition-colors">DB 전체 초기화</button>
-                </div>
+            <div class="flex items-center gap-2 mb-4">
+                <span class="bg-indigo-600 text-white text-xs font-black px-2 py-1 rounded">STEP 1</span>
+                <h2 class="text-lg font-bold text-indigo-900">학생 데이터베이스 업로드 (나이스 엑셀 지원)</h2>
             </div>
-
+            
             <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <!-- 1. 명단 업로드 -->
-                <div class="bg-white p-3 rounded-xl border border-indigo-100 flex flex-col justify-between hover:shadow-md transition-shadow">
-                    <div class="mb-2">
-                        <p class="text-sm font-bold text-slate-800">1. 학적 명단 (선택)</p>
-                        <p class="text-[11px] text-slate-500 line-clamp-1">나이스 학년이력/일반명단</p>
+                <label class="cursor-pointer bg-white p-3 rounded-xl border border-indigo-100 hover:shadow-md transition-shadow flex flex-col justify-between group">
+                    <div>
+                        <p class="text-sm font-bold text-slate-800 group-hover:text-indigo-600 transition-colors">1. 학적 명단</p>
+                        <p class="text-[11px] text-slate-500 mt-1">학년이력/일반명단</p>
                     </div>
-                    <label class="cursor-pointer bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold py-2 px-3 rounded-lg text-center transition-colors">
-                        파일 업로드
-                        <input type="file" id="studentCsvUpload" class="hidden" accept=".csv, .xlsx, .xls">
-                    </label>
-                </div>
+                    <div class="mt-3 bg-slate-100 text-slate-600 text-xs font-bold py-1.5 px-3 rounded text-center">파일 선택</div>
+                    <input type="file" id="uploadList" class="hidden" accept=".csv, .xlsx, .xls">
+                </label>
 
-                <!-- 2. 교과 세특 업로드 -->
-                <div class="bg-white p-3 rounded-xl border border-indigo-100 flex flex-col justify-between hover:shadow-md transition-shadow">
-                    <div class="mb-2">
-                        <p class="text-sm font-bold text-indigo-800">2. 교과 세특</p>
-                        <p class="text-[11px] text-slate-500 line-clamp-1">나이스 세특 엑셀</p>
+                <label class="cursor-pointer bg-white p-3 rounded-xl border border-indigo-100 hover:shadow-md transition-shadow flex flex-col justify-between group">
+                    <div>
+                        <p class="text-sm font-bold text-indigo-800 group-hover:text-indigo-600 transition-colors">2. 교과 세특</p>
+                        <p class="text-[11px] text-slate-500 mt-1">나이스 세특 엑셀</p>
                     </div>
-                    <label class="cursor-pointer bg-indigo-100 hover:bg-indigo-200 text-indigo-700 text-xs font-bold py-2 px-3 rounded-lg text-center transition-colors">
-                        파일 업로드
-                        <input type="file" id="subjectCsvUpload" class="hidden" accept=".csv, .xlsx, .xls">
-                    </label>
-                </div>
+                    <div class="mt-3 bg-indigo-50 text-indigo-600 text-xs font-bold py-1.5 px-3 rounded text-center">파일 선택</div>
+                    <input type="file" id="uploadSubject" class="hidden" accept=".csv, .xlsx, .xls">
+                </label>
 
-                <!-- 3. 창체 업로드 -->
-                <div class="bg-white p-3 rounded-xl border border-indigo-100 flex flex-col justify-between hover:shadow-md transition-shadow">
-                    <div class="mb-2">
-                        <p class="text-sm font-bold text-emerald-800">3. 창체 활동</p>
-                        <p class="text-[11px] text-slate-500 line-clamp-1">자율/동아리/진로 엑셀</p>
+                <label class="cursor-pointer bg-white p-3 rounded-xl border border-indigo-100 hover:shadow-md transition-shadow flex flex-col justify-between group">
+                    <div>
+                        <p class="text-sm font-bold text-emerald-800 group-hover:text-emerald-600 transition-colors">3. 창의적 체험활동</p>
+                        <p class="text-[11px] text-slate-500 mt-1">자율/동아리/진로</p>
                     </div>
-                    <label class="cursor-pointer bg-emerald-100 hover:bg-emerald-200 text-emerald-700 text-xs font-bold py-2 px-3 rounded-lg text-center transition-colors">
-                        파일 업로드
-                        <input type="file" id="changcheCsvUpload" class="hidden" accept=".csv, .xlsx, .xls">
-                    </label>
-                </div>
+                    <div class="mt-3 bg-emerald-50 text-emerald-600 text-xs font-bold py-1.5 px-3 rounded text-center">파일 선택</div>
+                    <input type="file" id="uploadChangche" class="hidden" accept=".csv, .xlsx, .xls">
+                </label>
 
-                <!-- 4. 행특 업로드 -->
-                <div class="bg-white p-3 rounded-xl border border-indigo-100 flex flex-col justify-between hover:shadow-md transition-shadow">
-                    <div class="mb-2">
-                        <p class="text-sm font-bold text-amber-800">4. 행동특성</p>
-                        <p class="text-[11px] text-slate-500 line-clamp-1">행특 및 종합의견 엑셀</p>
+                <label class="cursor-pointer bg-white p-3 rounded-xl border border-indigo-100 hover:shadow-md transition-shadow flex flex-col justify-between group">
+                    <div>
+                        <p class="text-sm font-bold text-amber-800 group-hover:text-amber-600 transition-colors">4. 행동특성</p>
+                        <p class="text-[11px] text-slate-500 mt-1">행특 및 종합의견</p>
                     </div>
-                    <label class="cursor-pointer bg-amber-100 hover:bg-amber-200 text-amber-700 text-xs font-bold py-2 px-3 rounded-lg text-center transition-colors">
-                        파일 업로드
-                        <input type="file" id="haengteukCsvUpload" class="hidden" accept=".csv, .xlsx, .xls">
-                    </label>
-                </div>
-            </div>
-
-            <div class="mt-4 pt-4 border-t border-indigo-100/50 flex flex-col md:flex-row items-center gap-3">
-                <span class="text-sm font-bold text-indigo-900 whitespace-nowrap">분석할 학생 선택:</span>
-                <select id="dbStudentSelect" class="flex-grow appearance-none bg-white border border-indigo-200 text-slate-800 py-2.5 px-4 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium">
-                    <option value="">-- 먼저 파일을 업로드하거나 학생을 선택하세요 --</option>
-                </select>
-                <!-- 포트폴리오 보기 버튼 추가 -->
-                <button id="viewPortfolioBtn" class="hidden items-center justify-center gap-1.5 bg-slate-800 hover:bg-slate-900 text-white text-sm font-bold py-2.5 px-4 rounded-xl transition-colors whitespace-nowrap">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
-                    통합 포트폴리오 보기
-                </button>
-                <span id="dbStatus" class="text-xs font-bold text-indigo-600 bg-white px-3 py-2 rounded-xl border border-indigo-100 shadow-sm whitespace-nowrap">등록 학생: 0명</span>
+                    <div class="mt-3 bg-amber-50 text-amber-600 text-xs font-bold py-1.5 px-3 rounded text-center">파일 선택</div>
+                    <input type="file" id="uploadHaengteuk" class="hidden" accept=".csv, .xlsx, .xls">
+                </label>
             </div>
         </section>
 
-        <!-- Input Section -->
-        <section class="glass-panel rounded-2xl shadow-sm p-8">
-            <div class="mb-6">
-                <h3 class="block text-sm font-bold text-slate-700 mb-3">지원 희망 대학 및 학과 선택</h3>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div class="relative">
-                        <select id="univSelect" class="block w-full appearance-none bg-white border border-slate-300 text-slate-700 py-3.5 px-4 pr-8 rounded-xl leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow font-medium cursor-pointer">
-                            <option value="">1. 대학 선택</option>
-                        </select>
-                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-500"><svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg></div>
-                    </div>
-                    <div class="relative">
-                        <select id="categorySelect" disabled class="block w-full appearance-none bg-white border border-slate-300 text-slate-700 py-3.5 px-4 pr-8 rounded-xl leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow font-medium cursor-pointer">
-                            <option value="">2. 계열 선택</option>
-                        </select>
-                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-500"><svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg></div>
-                    </div>
-                    <div class="relative">
-                        <select id="deptSelect" disabled class="block w-full appearance-none bg-white border border-slate-300 text-slate-700 py-3.5 px-4 pr-8 rounded-xl leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow font-medium cursor-pointer">
-                            <option value="">3. 학과 선택</option>
-                        </select>
-                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-500"><svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg></div>
-                    </div>
-                </div>
+        <!-- STEP 2: Input & Action Section -->
+        <section class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex flex-col gap-6">
+            <div class="flex items-center gap-2 border-b border-slate-100 pb-4">
+                <span class="bg-blue-600 text-white text-xs font-black px-2 py-1 rounded">STEP 2</span>
+                <h2 class="text-lg font-bold text-slate-900">평가 대상 선택 및 종합 포트폴리오</h2>
             </div>
 
-            <div class="bg-rose-50 rounded-xl p-4 flex gap-3 border border-rose-100 items-start mb-4">
-                <svg class="w-6 h-6 text-rose-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-                <div>
-                    <h4 class="text-sm font-bold text-rose-900">엄격한 종합 정성평가 가이드</h4>
-                    <p class="text-xs text-rose-800 mt-1 leading-relaxed">
-                        위 DB에서 학생을 선택하면 <strong>모든 생기부 기록(교과/창체/행특)이 하나로 합쳐져 아래에 표시</strong>됩니다. AI는 12개 대학별 맞춤 기준을 적용하여 여러 영역 간의 <strong>융복합적 연계성</strong>을 채점합니다.
-                    </p>
-                </div>
-            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- 학생 및 학과 선택 -->
+                <div class="flex flex-col gap-4">
+                    <div>
+                        <label class="block text-sm font-bold text-slate-700 mb-1.5">A. 분석할 학생 선택</label>
+                        <div class="flex gap-2">
+                            <select id="studentSelect" class="flex-grow bg-slate-50 border border-slate-300 text-slate-700 py-3 px-4 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium">
+                                <option value="">-- 먼저 파일을 업로드하거나 학생을 선택하세요 --</option>
+                            </select>
+                            <span id="dbStatus" class="flex items-center justify-center text-xs font-bold text-slate-500 bg-slate-100 px-3 rounded-xl border border-slate-200 whitespace-nowrap">0명</span>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-bold text-slate-700 mb-1.5">B. 지원 희망 학과</label>
+                        <select id="majorSelect" class="w-full bg-slate-50 border border-slate-300 text-slate-700 py-3 px-4 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium">
+                            <option value="">지원 학과를 선택하세요 (대표 10개)</option>
+                            <option value="기계공학부">기계공학부</option>
+                            <option value="컴퓨터공학부">컴퓨터공학부</option>
+                            <option value="생명과학과">생명과학과</option>
+                            <option value="화학공학과">화학공학과</option>
+                            <option value="경영학과">경영학과</option>
+                            <option value="경제학과">경제학과</option>
+                            <option value="정치외교학과">정치외교학과</option>
+                            <option value="심리학과">심리학과</option>
+                            <option value="국어국문학과">국어국문학과</option>
+                            <option value="영어영문학과">영어영문학과</option>
+                        </select>
+                    </div>
 
-            <label for="seTeukInput" class="block text-sm font-bold text-slate-700 mb-2">선택된 학생의 종합 생기부 기록 (수동 입력/수정 가능)</label>
-            <textarea id="seTeukInput" class="w-full h-64 p-5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none resize-none text-slate-700 leading-relaxed text-sm transition-shadow bg-slate-50" placeholder="위에서 학생을 선택하면 데이터가 자동으로 불려옵니다. 직접 텍스트를 입력하셔도 됩니다."></textarea>
-            
-            <div class="mt-6 flex justify-end">
-                <button id="analyzeBtn" class="bg-slate-800 hover:bg-slate-900 text-white font-bold py-3.5 px-8 rounded-xl shadow-lg shadow-slate-300 transition-all flex items-center gap-2 transform hover:-translate-y-0.5">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-                    선택 학생 대학 맞춤 심층 종합평가
-                </button>
+                    <!-- 액션 버튼들 -->
+                    <div class="grid grid-cols-2 gap-3 mt-auto pt-2">
+                        <button id="viewPdfBtn" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3.5 px-4 rounded-xl transition-colors flex items-center justify-center gap-2 border border-slate-300 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                            <svg class="w-5 h-5 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+                            통합 세특 PDF 다운로드
+                        </button>
+                        <button id="analyzeBtn" class="bg-slate-900 hover:bg-slate-800 text-white font-bold py-3.5 px-4 rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                            <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                            AI 심층 분석 실행
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 통합 텍스트 에어리어 -->
+                <div class="flex flex-col">
+                    <label class="block text-sm font-bold text-slate-700 mb-1.5 flex justify-between">
+                        <span>C. 학생부 통합 기록 (자동 병합)</span>
+                        <span class="text-xs font-normal text-slate-400">직접 수정도 가능합니다.</span>
+                    </label>
+                    <textarea id="recordInput" class="w-full flex-grow min-h-[250px] p-4 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none resize-none text-slate-700 leading-relaxed text-sm" placeholder="왼쪽에서 학생을 선택하면 교과, 창체, 행특 기록이 자동으로 하나로 합쳐져 이곳에 표시됩니다."></textarea>
+                </div>
             </div>
         </section>
 
         <!-- Loading State -->
-        <section id="loadingSection" class="hidden flex-col items-center justify-center py-20 bg-white rounded-2xl border border-slate-200 shadow-sm">
-            <div class="spinner border-t-slate-800 mb-6"></div>
-            <h3 class="text-lg font-bold text-slate-800 mb-2">AI 입학사정관이 학생의 3년치 기록을 융합 분석 중입니다...</h3>
-            <p class="text-sm text-slate-500">교과, 창의적 체험활동, 행동특성 간의 유기적 연계성을 다각도로 검증하고 있습니다.</p>
+        <section id="loadingSection" class="hidden flex-col items-center justify-center py-16 bg-white rounded-2xl border border-slate-200 shadow-sm">
+            <div class="spinner mb-6"></div>
+            <h3 class="text-lg font-extrabold text-slate-800 mb-2">AI 입학사정관이 문맥을 심층 분석하고 있습니다...</h3>
+            <p class="text-sm text-slate-500 font-medium">단순 키워드가 아닌 탐구의 '동기-과정-성장'을 융합적으로 평가 중입니다.</p>
         </section>
 
         <!-- Results Dashboard -->
-        <section id="resultSection" class="hidden fade-in relative">
-            <div class="flex justify-end mb-4">
-                <button id="pdfDownloadBtn" class="inline-flex items-center gap-2 bg-slate-800 hover:bg-slate-900 text-white text-sm font-bold py-2.5 px-5 rounded-lg shadow-md transition-colors">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                    결과보고서 PDF 다운로드
-                </button>
+        <section id="resultSection" class="hidden fade-in flex-col gap-6">
+            <!-- Summary Header -->
+            <div class="bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl p-8 text-white shadow-lg relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-8">
+                <div class="absolute -top-24 -right-24 w-64 h-64 bg-white opacity-5 rounded-full blur-3xl"></div>
+                <div class="w-full md:w-2/3 z-10">
+                    <div class="flex items-center gap-3 mb-3">
+                        <span class="bg-blue-500/30 border border-blue-400/30 text-blue-100 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">Target Major</span>
+                        <span id="resMajor" class="text-slate-200 font-bold text-sm"></span>
+                    </div>
+                    <h2 class="text-2xl font-black mb-4">종합 평가 코멘트</h2>
+                    <p id="resComment" class="text-slate-300 leading-relaxed text-sm md:text-base font-medium italic border-l-4 border-blue-500 pl-4"></p>
+                </div>
+                <div class="w-full md:w-1/3 flex flex-col items-center justify-center border-l border-white/10 pl-0 md:pl-8 z-10">
+                    <div class="text-sm text-slate-400 font-bold mb-1">지원 학과 적합도</div>
+                    <div class="text-6xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-blue-300 to-emerald-300" id="resSuitability">0<span class="text-3xl">%</span></div>
+                    <div class="w-full bg-black/40 rounded-full h-3 mt-4 overflow-hidden border border-white/10">
+                        <div id="resSuitabilityBar" class="bg-gradient-to-r from-blue-400 to-emerald-400 h-full rounded-full progress-fill w-0"></div>
+                    </div>
+                </div>
             </div>
-
-            <!-- PDF 출력 영역 -->
-            <div id="pdfPrintArea" class="flex flex-col gap-6">
-                <div class="hidden pdf-only-header border-b-2 border-slate-800 pb-4 mb-4">
-                    <h1 class="text-3xl font-black text-slate-900 text-center">AI 입학사정관 생기부 심층 융합 분석 보고서</h1>
-                    <p class="text-right text-lg font-bold text-indigo-700 mt-4" id="pdfStudentNameInfo">대상 학생: 미지정</p>
-                    <p class="text-right text-sm text-slate-500 mt-1 italic font-serif">제작: 부안고등학교 교사 김진석</p>
-                </div>
-
-                <div class="bg-gradient-to-r from-slate-900 to-slate-800 rounded-2xl p-8 text-white shadow-lg relative overflow-hidden">
-                    <div class="absolute -top-20 -right-20 w-64 h-64 bg-white opacity-5 rounded-full blur-2xl"></div>
-                    <div class="absolute -bottom-20 -left-20 w-48 h-48 bg-slate-400 opacity-10 rounded-full blur-xl"></div>
-                    
-                    <div class="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
-                        <div class="w-full md:w-2/3">
-                            <div class="flex items-center gap-3 mb-2">
-                                <span class="bg-slate-500/30 border border-slate-400/30 text-slate-100 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">Target Fit</span>
-                                <span id="resultDeptName" class="text-slate-200 font-medium text-sm"></span>
-                            </div>
-                            <h2 class="text-3xl font-extrabold mb-4 leading-tight">학생부종합전형 총합 정량 점수</h2>
-                            <div class="w-full bg-black/50 rounded-full h-4 mb-2 border border-slate-700/50 overflow-hidden">
-                                <div id="overallProgressBar" class="bg-gradient-to-r from-blue-400 to-emerald-300 h-full rounded-full progress-fill w-0"></div>
-                            </div>
+            
+            <!-- 3 Core Competencies Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Academic -->
+                <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm card-hover cursor-pointer group relative overflow-hidden" onclick="openDetailModal('academic')">
+                    <div class="absolute top-0 left-0 w-1 h-full bg-indigo-500"></div>
+                    <div class="flex justify-between items-start mb-4 pl-2">
+                        <div class="p-3 bg-indigo-50 text-indigo-600 rounded-xl group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
                         </div>
-                        <div class="w-full md:w-1/3 flex flex-col items-center justify-center border-l border-white/10 pl-0 md:pl-8">
-                            <div class="text-6xl font-black tracking-tighter" id="overallScoreText">0<span class="text-3xl text-slate-300">%</span></div>
-                            <div class="mt-2 text-sm font-bold px-4 py-1.5 bg-white text-slate-900 rounded-full shadow-inner" id="overallGradeText">엄격한 평가 적용됨</div>
+                        <div class="text-right">
+                            <div class="text-sm text-slate-400 font-bold mb-0.5">등급</div>
+                            <div id="grade-academic" class="text-2xl font-black text-indigo-600">-</div>
                         </div>
                     </div>
-                </div>
-                
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 cursor-pointer group flex flex-col h-full pdf-card" onclick="openModal('academic')">
-                        <div class="flex justify-between items-start mb-4">
-                            <div class="p-3.5 bg-indigo-50 text-indigo-600 rounded-xl group-hover:bg-indigo-600 group-hover:text-white transition-colors duration-300">
-                                <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
-                            </div>
-                            <div id="grade-academic" class="text-3xl font-black text-slate-400">0점</div>
-                        </div>
-                        <h3 class="text-xl font-bold text-slate-800 mb-2">학업역량</h3>
-                        <p class="text-sm text-slate-500 mb-6 flex-grow">전 영역을 관통하는 학업태도, 지식 확장과 탐구력</p>
-                        <div class="pt-4 border-t border-slate-100 flex items-center justify-between pdf-hide">
-                            <span class="text-xs font-semibold text-slate-400 group-hover:text-indigo-500 transition-colors">추출된 모든 근거 보기</span>
-                            <svg class="w-4 h-4 text-slate-300 group-hover:text-indigo-500 transition-colors transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
-                        </div>
-                    </div>
-
-                    <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 cursor-pointer group flex flex-col h-full pdf-card" onclick="openModal('career')">
-                        <div class="flex justify-between items-start mb-4">
-                            <div class="p-3.5 bg-emerald-50 text-emerald-600 rounded-xl group-hover:bg-emerald-600 group-hover:text-white transition-colors duration-300">
-                                <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
-                            </div>
-                            <div id="grade-career" class="text-3xl font-black text-slate-400">0점</div>
-                        </div>
-                        <h3 id="careerTitle" class="text-xl font-bold text-slate-800 mb-2">진로(성장)역량</h3>
-                        <p id="careerDesc" class="text-sm text-slate-500 mb-6 flex-grow">대학별 필수 과목 이수, 융합적 사고 및 진로 탐색</p>
-                        <div class="pt-4 border-t border-slate-100 flex items-center justify-between pdf-hide">
-                            <span class="text-xs font-semibold text-slate-400 group-hover:text-emerald-500 transition-colors">추출된 모든 근거 보기</span>
-                            <svg class="w-4 h-4 text-slate-300 group-hover:text-emerald-500 transition-colors transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
-                        </div>
-                    </div>
-
-                    <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 cursor-pointer group flex flex-col h-full pdf-card" onclick="openModal('community')">
-                        <div class="flex justify-between items-start mb-4">
-                            <div class="p-3.5 bg-amber-50 text-amber-600 rounded-xl group-hover:bg-amber-500 group-hover:text-white transition-colors duration-300">
-                                <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
-                            </div>
-                            <div id="grade-community" class="text-3xl font-black text-slate-400">0점</div>
-                        </div>
-                        <h3 class="text-xl font-bold text-slate-800 mb-2">공동체역량</h3>
-                        <p class="text-sm text-slate-500 mb-6 flex-grow">협업과 소통, 나눔과 배려, 주도적 실천 리더십</p>
-                        <div class="pt-4 border-t border-slate-100 flex items-center justify-between pdf-hide">
-                            <span class="text-xs font-semibold text-slate-400 group-hover:text-amber-500 transition-colors">추출된 모든 근거 보기</span>
-                            <svg class="w-4 h-4 text-slate-300 group-hover:text-amber-500 transition-colors transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
-                        </div>
+                    <h3 class="text-xl font-bold text-slate-800 mb-1 pl-2">학업역량</h3>
+                    <p class="text-xs text-slate-500 mb-4 pl-2">자기주도성, 깊이 있는 탐구력, 학업태도</p>
+                    <div class="flex items-center justify-between mt-auto pt-4 border-t border-slate-100 pl-2">
+                        <span id="score-academic" class="font-black text-slate-700 text-lg">0점</span>
+                        <span class="text-xs font-bold text-indigo-500 flex items-center gap-1 group-hover:translate-x-1 transition-transform">상세 판단 근거 보기 <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg></span>
                     </div>
                 </div>
 
-                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden mt-2">
-                    <div class="bg-slate-50 border-b border-slate-200 px-6 py-4 flex items-center gap-3">
-                        <div class="p-2 bg-slate-800 text-white rounded-lg">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                <!-- Career -->
+                <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm card-hover cursor-pointer group relative overflow-hidden" onclick="openDetailModal('career')">
+                    <div class="absolute top-0 left-0 w-1 h-full bg-emerald-500"></div>
+                    <div class="flex justify-between items-start mb-4 pl-2">
+                        <div class="p-3 bg-emerald-50 text-emerald-600 rounded-xl group-hover:bg-emerald-600 group-hover:text-white transition-colors">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
                         </div>
-                        <h3 class="text-lg font-bold text-slate-800">입학사정관 종합 정성평가 의견 (냉철한 분석)</h3>
+                        <div class="text-right">
+                            <div class="text-sm text-slate-400 font-bold mb-0.5">등급</div>
+                            <div id="grade-career" class="text-2xl font-black text-emerald-600">-</div>
+                        </div>
                     </div>
-                    <div class="p-8">
-                        <p id="overallComment" class="text-slate-700 leading-loose text-lg font-medium italic relative">
-                            <span class="absolute -top-4 -left-4 text-6xl text-slate-100 font-serif leading-none z-0">"</span>
-                            <span class="relative z-10" id="overallCommentText">평가 결과가 이곳에 출력됩니다.</span>
-                        </p>
+                    <h3 class="text-xl font-bold text-slate-800 mb-1 pl-2">진로역량</h3>
+                    <p class="text-xs text-slate-500 mb-4 pl-2">전공 관련 교과 이수, 융복합적 진로 탐색</p>
+                    <div class="flex items-center justify-between mt-auto pt-4 border-t border-slate-100 pl-2">
+                        <span id="score-career" class="font-black text-slate-700 text-lg">0점</span>
+                        <span class="text-xs font-bold text-emerald-500 flex items-center gap-1 group-hover:translate-x-1 transition-transform">상세 판단 근거 보기 <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg></span>
+                    </div>
+                </div>
+
+                <!-- Community -->
+                <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm card-hover cursor-pointer group relative overflow-hidden" onclick="openDetailModal('community')">
+                    <div class="absolute top-0 left-0 w-1 h-full bg-amber-500"></div>
+                    <div class="flex justify-between items-start mb-4 pl-2">
+                        <div class="p-3 bg-amber-50 text-amber-600 rounded-xl group-hover:bg-amber-500 group-hover:text-white transition-colors">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-sm text-slate-400 font-bold mb-0.5">등급</div>
+                            <div id="grade-community" class="text-2xl font-black text-amber-600">-</div>
+                        </div>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-800 mb-1 pl-2">공동체역량</h3>
+                    <p class="text-xs text-slate-500 mb-4 pl-2">협업과 소통, 나눔과 배려, 리더십</p>
+                    <div class="flex items-center justify-between mt-auto pt-4 border-t border-slate-100 pl-2">
+                        <span id="score-community" class="font-black text-slate-700 text-lg">0점</span>
+                        <span class="text-xs font-bold text-amber-500 flex items-center gap-1 group-hover:translate-x-1 transition-transform">상세 판단 근거 보기 <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg></span>
                     </div>
                 </div>
             </div>
         </section>
     </main>
 
-    <!-- DB 초기화 확인 모달 -->
-    <div id="confirmModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden z-[60] flex items-center justify-center transition-opacity opacity-0 duration-300">
-        <div class="bg-white rounded-2xl p-8 max-w-sm w-full shadow-2xl transform scale-95 transition-all duration-300">
-            <h3 class="text-xl font-bold text-slate-900 mb-2">DB 전체 초기화</h3>
-            <p class="text-slate-600 mb-6 text-sm leading-relaxed">브라우저에 저장된 모든 학생 데이터가 완전히 삭제됩니다. 진행하시겠습니까?</p>
-            <div class="flex justify-end gap-3">
-                <button id="btnCancelReset" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-lg transition-colors text-sm">취소</button>
-                <button id="btnConfirmReset" class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-semibold rounded-lg transition-colors text-sm shadow-md">네, 삭제합니다</button>
+    <!-- Modal: AI 상세 분석 근거 표 -->
+    <div id="modalOverlay" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden z-40 transition-opacity duration-300 opacity-0" onclick="closeDetailModal()"></div>
+    <div id="detailModal" class="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-11/12 max-w-5xl bg-white rounded-2xl shadow-2xl hidden z-50 flex-col max-h-[90vh] scale-95 opacity-0 transition-all duration-300 overflow-hidden">
+        <div class="flex justify-between items-center px-8 py-5 border-b border-slate-200 bg-slate-50">
+            <div>
+                <h3 id="modalTitle" class="text-2xl font-black text-slate-800">역량 상세 판단 근거</h3>
+                <p class="text-sm font-medium text-slate-500 mt-1">AI 입학사정관이 추출한 세특 문맥과 심층 코멘트입니다.</p>
             </div>
-        </div>
-    </div>
-
-    <!-- 역량 상세 분석 모달 (AI 결과용) -->
-    <div id="modalOverlay" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden z-40 transition-opacity duration-300 opacity-0"></div>
-    <div id="detailModal" class="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-11/12 max-w-5xl bg-white rounded-2xl shadow-2xl hidden z-50 flex-col max-h-[90vh] scale-95 opacity-0 transition-all duration-300">
-        <div class="flex justify-between items-center px-8 py-6 border-b border-slate-100 bg-slate-50/50 rounded-t-2xl">
-            <div class="flex items-center gap-3">
-                <div id="modalIcon" class="w-10 h-10 rounded-lg flex items-center justify-center text-white"></div>
-                <div>
-                    <h3 id="modalTitle" class="text-2xl font-black text-slate-900">역량 상세 분석 (과목별 융합 근거)</h3>
-                    <p id="modalSubtitle" class="text-sm font-medium text-slate-500 mt-1">AI가 모든 기록을 스캔하여 입체적으로 추출한 문맥입니다.</p>
-                </div>
-            </div>
-            <button id="closeDetailModalBtn" class="text-slate-400 hover:text-slate-700 hover:bg-slate-200 p-2.5 rounded-xl transition-colors">
+            <button onclick="closeDetailModal()" class="text-slate-400 hover:text-slate-700 bg-white border border-slate-200 hover:bg-slate-100 p-2 rounded-xl transition-colors">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
         </div>
-        
-        <div class="p-8 overflow-y-auto bg-white flex-grow">
-            <div class="border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-                <table class="min-w-full divide-y divide-slate-200">
-                    <thead class="bg-slate-50">
+        <div class="p-6 overflow-y-auto bg-white flex-grow">
+            <div class="border border-slate-200 rounded-xl overflow-hidden">
+                <table class="min-w-full divide-y divide-slate-200 table-fixed">
+                    <thead class="bg-slate-100">
                         <tr>
-                            <th scope="col" class="px-6 py-4 text-left text-sm font-bold text-slate-800 w-1/6 border-r border-slate-200">평가 세부 항목</th>
-                            <th scope="col" class="px-6 py-4 text-left text-sm font-bold text-slate-800 w-2/5 border-r border-slate-200">세특 추출 문장 (모든 근거)</th>
-                            <th scope="col" class="px-6 py-4 text-left text-sm font-bold text-slate-800 w-2/5">사정관 심층 코멘트 (문맥 해석)</th>
+                            <th class="w-1/5 px-6 py-4 text-left text-sm font-extrabold text-slate-800 border-r border-slate-200">평가 세부 항목</th>
+                            <th class="w-2/5 px-6 py-4 text-left text-sm font-extrabold text-slate-800 border-r border-slate-200">세특 추출 문장 (판단 근거 원문)</th>
+                            <th class="w-2/5 px-6 py-4 text-left text-sm font-extrabold text-slate-800">사정관 심층 코멘트 (문맥 해석)</th>
                         </tr>
                     </thead>
                     <tbody id="modalTableBody" class="bg-white divide-y divide-slate-200"></tbody>
                 </table>
             </div>
-            
-            <div id="emptyState" class="hidden text-center py-16 bg-slate-50 rounded-xl mt-4 border border-dashed border-slate-300">
-                <svg class="w-16 h-16 text-slate-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                <h4 class="text-lg font-bold text-slate-700 mb-1">관련 문맥을 전혀 찾을 수 없습니다</h4>
-                <p class="text-slate-500 font-medium text-sm">해당 역량을 증명할 수 있는 의미 있는 활동 내역이 전체 기록에서 부족합니다.</p>
+            <div id="emptyState" class="hidden text-center py-12 bg-slate-50 rounded-xl mt-4 border border-dashed border-slate-300">
+                <p class="text-slate-500 font-bold">해당 역량에 대한 유의미한 문맥을 찾을 수 없습니다.</p>
             </div>
         </div>
-        
-        <div class="px-8 py-5 border-t border-slate-100 bg-slate-50 rounded-b-2xl flex justify-between items-center">
-            <p class="text-xs text-slate-400 font-medium">* 본 결과는 가상의 AI 분석 엔진에 기반한 참고용 데이터입니다.</p>
-            <button id="closeDetailModalBtn2" class="px-6 py-2.5 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-xl transition-all shadow-sm">확인 및 닫기</button>
+        <div class="px-8 py-4 border-t border-slate-100 bg-slate-50 flex justify-end">
+            <button onclick="closeDetailModal()" class="px-6 py-2.5 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-xl transition-colors">닫기</button>
         </div>
     </div>
 
-    <!-- ★ 학생 포트폴리오 보기 전용 모달창 ★ -->
-    <div id="portfolioModalOverlay" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm hidden z-40 transition-opacity duration-300 opacity-0"></div>
-    <div id="portfolioModal" class="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-11/12 max-w-6xl bg-slate-50 rounded-2xl shadow-2xl hidden z-50 flex-col max-h-[90vh] scale-95 opacity-0 transition-all duration-300">
-        <div class="flex justify-between items-center px-8 py-6 border-b border-slate-200 bg-white rounded-t-2xl shadow-sm z-10">
-            <div class="flex items-center gap-4">
-                <div class="w-12 h-12 bg-slate-800 rounded-xl flex items-center justify-center text-white shadow-md">
-                    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
-                </div>
-                <div>
-                    <h3 class="text-2xl font-black text-slate-900">학생 통합 포트폴리오</h3>
-                    <p id="portfolioStudentName" class="text-sm font-bold text-indigo-600 mt-1">학생 이름 표시 영역</p>
-                </div>
-            </div>
-            <div class="flex gap-2">
-                <button id="btnExcelSave" class="hidden md:flex items-center gap-1.5 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 text-sm font-bold py-2 px-4 rounded-lg transition-colors">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
-                    Excel 저장
-                </button>
-                <button id="btnPdfSave" class="hidden md:flex items-center gap-1.5 bg-rose-100 hover:bg-rose-200 text-rose-700 text-sm font-bold py-2 px-4 rounded-lg transition-colors">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
-                    PDF 저장
-                </button>
-                <button id="closePortfolioModalBtn" class="ml-2 text-slate-400 hover:text-slate-700 p-2 bg-white border border-slate-200 rounded-lg transition-colors shadow-sm">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                </button>
-            </div>
+    <!-- 숨겨진 PDF 출력용 포트폴리오 렌더링 영역 (html2pdf 사용) -->
+    <div id="pdfPrintArea" class="hidden bg-white p-10">
+        <div class="pdf-only-header border-b-2 border-slate-800 pb-4 mb-6">
+            <h1 class="text-3xl font-black text-slate-900 text-center">학교생활기록부 통합 포트폴리오</h1>
+            <p class="text-right text-lg font-bold text-slate-700 mt-2" id="pdfPortfolioName">이름</p>
         </div>
-        
-        <div id="portfolioPrintArea" class="p-8 overflow-y-auto flex-grow pdf-mode-portfolio">
-            <!-- PDF 출력용 헤더 -->
-            <div class="hidden pdf-only-header border-b-2 border-slate-800 pb-4 mb-6">
-                <h1 class="text-3xl font-black text-slate-900 text-center">학생부 통합 포트폴리오</h1>
-                <p class="text-right text-lg font-bold text-slate-700 mt-2" id="pdfPortfolioName">이름</p>
+        <div class="flex flex-col gap-6">
+            <div class="bg-white rounded-xl border border-slate-300">
+                <h4 class="text-lg font-bold text-indigo-800 bg-indigo-50 p-3 rounded-t-xl border-b border-slate-300">1. 교과 세부능력 및 특기사항</h4>
+                <div id="pfSubjects" class="p-4 grid gap-3"></div>
             </div>
-
-            <div class="flex flex-col gap-6">
-                <!-- 1. 교과 세특 -->
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                    <h4 class="text-lg font-bold text-indigo-800 mb-4 flex items-center gap-2 border-b border-indigo-100 pb-3">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
-                        교과 세부능력 및 특기사항
-                    </h4>
-                    <div id="pfSubjects" class="grid gap-3"></div>
-                </div>
-                
-                <!-- 2. 창의적 체험활동 -->
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                    <h4 class="text-lg font-bold text-emerald-800 mb-4 flex items-center gap-2 border-b border-emerald-100 pb-3">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M14 4l-2-1-2 1M4 7l2-1M4 7l2 1M4 7v2.5M12 21l-2-1m2 1l2-1m-2 1v-2.5M6 18l-2-1v-2.5M18 18l2-1v-2.5"></path></svg>
-                        창의적 체험활동 (자율/동아리/진로)
-                    </h4>
-                    <div id="pfChangche" class="grid gap-3"></div>
-                </div>
-
-                <!-- 3. 행동특성 및 종합의견 -->
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                    <h4 class="text-lg font-bold text-amber-800 mb-4 flex items-center gap-2 border-b border-amber-100 pb-3">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z"></path></svg>
-                        행동특성 및 종합의견
-                    </h4>
-                    <div id="pfHaengteuk" class="grid gap-3"></div>
-                </div>
+            <div class="bg-white rounded-xl border border-slate-300">
+                <h4 class="text-lg font-bold text-emerald-800 bg-emerald-50 p-3 rounded-t-xl border-b border-slate-300">2. 창의적 체험활동 (자율/동아리/진로)</h4>
+                <div id="pfChangche" class="p-4 grid gap-3"></div>
+            </div>
+            <div class="bg-white rounded-xl border border-slate-300">
+                <h4 class="text-lg font-bold text-amber-800 bg-amber-50 p-3 rounded-t-xl border-b border-slate-300">3. 행동특성 및 종합의견</h4>
+                <div id="pfHaengteuk" class="p-4 grid gap-3"></div>
             </div>
         </div>
     </div>
+
+    <!-- 토스트 알림 컨테이너 -->
+    <div id="toastContainer" class="fixed bottom-6 right-6 z-[100] flex flex-col gap-2"></div>
 
     <script>
-        // DOM 요소 존재 여부를 확인하고 이벤트를 안전하게 연결하는 함수
-        function addEvent(id, eventType, callback) {
-            const element = document.getElementById(id);
-            if (element) {
-                element.addEventListener(eventType, callback);
-            } else {
-                console.warn(`Element with ID '${id}' not found. Cannot add event listener.`);
-            }
-        }
-
-        // 트렌디한 토스트 알림창
-        function showToast(message, isError = false) {
-            const toast = document.createElement('div');
-            toast.className = `fixed bottom-6 right-6 px-6 py-3.5 rounded-xl shadow-2xl text-white font-bold text-sm transition-all transform translate-y-10 opacity-0 z-[100] flex items-center gap-3 ${isError ? 'bg-rose-600' : 'bg-emerald-600'}`;
-            
-            const icon = isError 
-                ? `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>`
-                : `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>`;
-            
-            toast.innerHTML = `${icon} <span>${message}</span>`;
-            document.body.appendChild(toast);
-            
-            setTimeout(() => { toast.classList.remove('translate-y-10', 'opacity-0'); }, 10);
-            setTimeout(() => {
-                toast.classList.add('translate-y-10', 'opacity-0');
-                setTimeout(() => toast.remove(), 300);
-            }, 3500);
-        }
-
         // ==========================================
-        // 1. 대학별 계열 및 학과 데이터
-        // ==========================================
-        const universityData = {
-            "서울대학교": {
-                "인문/사회과학": ["국어국문학과", "중어중문학과", "영어영문학과", "불어불문학과", "독어독문학과", "노어노문학과", "서어서문학과", "언어학과", "아시아언어문명학부", "역사학부", "고고미술사학과", "철학과", "종교학과", "미학과", "정치외교학부", "경제학부", "사회학과", "인류학과", "심리학과", "지리학과", "사회복지학과", "언론정보학과"],
-                "자연과학": ["수리과학부", "통계학과", "물리·천문학부(물리학, 천문학)", "화학부", "생명과학부", "지구환경과학부"],
-                "공과대학": ["광역", "건설환경도시공학부", "기계공학부", "재료공학부", "전기·정보공학부", "컴퓨터공학부", "화학생물공학부", "건축학과", "산업공학과", "에너지자원공학과", "원자핵공학과", "조선해양공학과", "항공우주공학과"],
-                "농업생명과학": ["농경제사회학부", "식물생산과학부", "산림과학부", "식품·동물생명공학부", "응용생물화학부", "조경·지역시스템공학부", "바이오시스템·소재학부", "스마트시스템과학과"],
-                "사범대학": ["교육/국어/영어/독어/불어/사회/역사/지리/윤리/수학/물리/화학/생물/지구과학교육과", "체육교육과"],
-                "기타/전문직": ["의예과", "치의학과(치의학대학원)", "수의예과", "약학계열", "간호학과", "경영대학", "미술대학(동양화, 서양화, 조소, 공예, 디자인)", "음악대학(성악, 작곡, 음악, 피아노, 관현악, 국악)", "소비자아동학부", "식품영양학과", "의류학과", "첨단융합학부", "자유전공학부"]
-            },
-            "연세대학교": {
-                "문과/상경/경영": ["국어국문", "중어중문", "영어영문", "독어독문", "불어불문", "노어노문", "사학", "철학", "문헌정보", "심리학과", "경제학부", "응용통계학과", "경영학과"],
-                "사회과학": ["정치외교", "행정", "언론홍보영상학부", "사회복지", "사회", "문화인류학과"],
-                "자연과학/생명시스템": ["수학", "물리", "화학", "지구시스템과학", "천문우주학", "대기과학", "시스템생물학", "생화학", "생명공학과"],
-                "공과/인공지능융합": ["화공생명공학부", "전기전자공학부", "건축공학", "도시공학", "건설환경공학", "기계공학부", "신소재공학부", "산업공학", "시스템반도체공학", "디스플레이융합공학과", "첨단컴퓨팅학부", "IT융합공학", "지능형반도체", "모빌리티시스템전공"],
-                "기타/전문직": ["신학과", "의예과", "치의예과", "간호학과", "약학과", "음악대학", "생활과학대학(의류환경, 식품영양, 실내건축, 아동·가족, 통합디자인)", "교육과학대학", "언더우드국제대학(비교문학, 국제학, 생명과학공학 등 다양한 융합전공)", "글로벌인재학부", "진리자유학부"]
-            },
-            "고려대학교": {
-                "공과대학": ["기계공학부", "전기전자공학부", "신소재공학부", "화공생명공학과", "건축사회환경공학부", "건축학과", "산업경영공학부", "융합에너지공학과"],
-                "정보대학": ["컴퓨터학과", "데이터과학과"],
-                "스마트보안/사이버국방": ["스마트보안학부", "사이버국방학과"],
-                "생명과학대학": ["생명과학부", "생명공학부", "식품공학과", "환경생태공학부", "식품자원경제학과"],
-                "의과/보건과학대학": ["의학과", "바이오의공학부", "바이오시스템의과학부", "보건환경융합과학부", "보건정책관리학부"],
-                "문과/사범/정경/기타": ["국어국문학과", "철학과", "한국사학과", "사학과", "사회학과", "정치외교학과", "경제학과", "통계학과", "행정학과", "교육학과", "미디어학부", "자유전공학부", "간호학과"]
-            },
-            "서강대학교": {
-                "인문/어문계열": ["국어국문학", "사학", "철학", "종교학", "영문학부", "유럽문화학", "중국문화학"],
-                "사회/상경계열": ["사회학", "정치외교학", "심리학", "경제학", "경영학", "미디어커뮤니케이션학"],
-                "자연/공학계열": ["수학", "물리학", "화학", "생명과학과", "전자공학과", "컴퓨터공학과", "화공생명공학과", "기계공학과", "인공지능학과", "반도체공학과(신설)"],
-                "자유전공학부": ["자유전공학부(인문학기반)", "자유전공학부(SCIENCE기반)", "자유전공학부(AI기반)"]
-            },
-            "한양대학교": {
-                "인문/사회/자연": ["국어국문", "중어중문", "영어영문", "독어독문", "사학", "철학", "정치외교", "사회", "미디어커뮤니케이션", "관광학부", "정책학", "행정학", "경제금융학부", "경영학부", "파이낸스경영학", "수학", "물리", "화학", "생명과학"],
-                "공과대학": ["건축학부", "건축공학부", "건설환경공학", "도시공학", "자원환경공학", "융합전자공학부", "컴퓨터소프트웨어학부", "정보시스템학", "전기·생체공학부(바이오메디컬)", "신소재공학부", "화학공학", "생명공학", "유기나노공학", "에너지공학", "기계공학부", "원자력공학", "산업공학", "미래자동차공학", "데이터사이언스학부", "반도체공학과"],
-                "기타/전문직": ["의예과", "간호학과", "사범대학", "생활과학대학", "음악대학", "예술체육대학(스포츠산업과학부, 연극영화학, 무용학)", "국제학부", "산업융합학부", "한양인터칼리지학부"]
-            },
-            "중앙대학교": {
-                "인문/사회/경영": ["국어국문", "영어영문", "유럽/아시아문화학부", "철학", "역사", "정치국제", "심리", "문헌정보", "사회복지", "사회", "도시계획·부동산", "공공인재", "미디어커뮤니케이션", "경영", "글로벌금융", "경제", "응용통계", "광고홍보", "국제물류"],
-                "자연/공학": ["물리", "화학", "생명과학", "수학", "사회기반시스템공학부", "건축학부", "화학공학", "기계공학부", "첨단소재공학", "에너지시스템공학", "전자전기공학부", "융합공학부", "지능형반도체공학", "소프트웨어학부", "AI학", "생명자원공학부", "식품공학부", "시스템생명공학과"],
-                "기타/전문직": ["사범대학", "약학부", "의학부", "간호학과", "예술공학부", "공연영상창작학부 등"]
-            },
-            "경희대학교": {
-                "주요 공학/자연": ["기계공학부", "미래정보디스플레이학부", "생체의공학과", "전자공학과", "반도체공학과", "건축공학", "사회기반시스템공학", "신소재공학", "화학공학", "스마트팜과학과", "유전생명공학과", "융합바이오·신소재공학과", "우주과학과 등"],
-                "기타/전문직": ["의예", "한의예", "치의예", "약학", "한약학", "약과학", "간호학", "예술 및 체육 관련 학과 등"]
-            },
-            "한국외국어대학교": {
-                "서양어/아시아어 등": ["ELLT", "영미문학·문화", "영어통번역", "프랑스어", "독일어", "노어", "스페인어", "이탈리아어", "포르투갈어", "네덜란드어", "스칸디나비아어", "말레이·인도네시아어", "태국학", "베트남어", "인도어", "아랍어", "튀르키예·아제르바이잔학", "페르시아어·이란학", "몽골어", "중국언어문화", "중국외교통상", "일본언어문화", "융합일본지역", "폴란드학", "루마니아학", "헝가리학", "아프리카학부", "한국학 등"],
-                "사회/상경/공학 등": ["정치외교", "행정", "미디어커뮤니케이션", "국제통상", "경제", "경영", "Global Business & Technology", "국제금융", "사범대학", "수학", "통계", "전자물리", "환경", "생명공학", "화학", "컴퓨터공학부", "정보통신공학", "반도체전자공학부", "산업경영공학", "바이오메디컬공학"],
-                "융합/기타": ["Language & AI 융합학부", "Social Science & AI 융합학부", "LD/LT학부", "융합인재학부", "디지털콘텐츠학부", "기후변화융합학부", "자유전공학부 등"]
-            },
-            "서울시립대학교": {
-                "주요 학과": ["국어국문학과", "영어영문학과", "국사학과", "사회학과", "수학과", "통계학과", "물리학과", "생명과학과", "환경원예학과", "융합응용화학과"],
-                "공과/융합": ["전자전기컴퓨터공학부", "화학공학과", "기계정보공학과", "신소재공학과", "토목공학과", "컴퓨터과학부", "인공지능학과", "건축학부", "도시공학", "교통공학", "조경학", "환경공학부", "공간정보공학", "첨단융합학부(융합바이오헬스/첨단인공지능/지능형반도체)"],
-                "기타": ["자유전공학부", "음악학과", "디자인/조각/스포츠과학과"]
-            },
-            "건국대학교": {
-                "주요 학과": ["경영", "기술경영", "부동산", "정치외교", "경제", "행정", "국제무역", "응용통계", "국어국문", "영어영문", "중어중문", "철학", "사학", "지리", "미디어커뮤니케이션", "문화콘텐츠", "수학", "물리", "화학"],
-                "자연/공학/기타": ["첨단바이오공학", "시스템생명", "융합생명", "동물자원·식품과학·유통", "환경보건·산림조경", "생명과학특성", "식량자원과학", "생물공학", "산업공학", "수의예과", "사범대학", "디자인/미술/영상 관련 학과", "KU자유전공학부 등"]
-            },
-            "동국대학교": {
-                "불교/문과/사회": ["불교학부", "문화유산학과", "국어국문·문예창작", "영어영문", "일본학", "중어중문", "철학", "사학", "법학", "정치외교", "행정", "북한학", "경제", "국제통상", "사회학", "미디어커뮤니케이션", "식품산업관리학", "광고홍보", "사회복지", "경찰행정학부", "경영", "회계", "경영정보"],
-                "자연/바이오/공과/첨단": ["수학", "화학", "통계", "물리", "융합환경과학", "생명과학", "식품바이오융합공학", "의생명공학", "전자전기공학부", "정보통신공학", "건설환경공학", "화공생물공학", "기계로봇에너지공학", "건축공학부", "산업시스템공학", "에너지신소재공학", "컴퓨터·AI학부", "시스템반도체학부", "의료인공지능공학과", "지능형네트워크융합학과"],
-                "기타": ["사범대학", "예술대학(미술, 연극, 영화영상, 스포츠문화, 한국음악)", "약학과", "미래융합대학(범죄학, 사회복지상담학, 글로벌무역)", "열린전공학부"]
-            },
-            "홍익대학교": {
-                "캠퍼스자율전공": ["캠퍼스자율전공(인문·예능)", "캠퍼스자율전공(자연·예능)"],
-                "공과대학": ["건설환경공학과", "전자전기공학부", "컴퓨터공학과", "산업데이터공학과", "신소재·화공시스템공학부", "기계·시스템디자인공학과"],
-                "건축대학": ["건축학전공", "실내건축학전공"],
-                "경영대학": ["경영학전공"],
-                "문과/사범대학": ["영어영문학과", "독어독문학과", "불어불문학과", "국어국문학과", "국어/영어/역사/수학교육과", "교육학과"],
-                "미술대학": ["동양화과", "회화과", "판화과", "조소과", "디자인학부", "금속조형디자인과", "도예·유리과", "목조형가구학과", "섬유미술·패션디자인과", "미술대학자율전공"],
-                "융합전공(참고용)": ["디자인엔지니어링전공", "문화예술경영전공", "공연예술전공", "지능·로봇공학전공", "사물인터넷공학전공", "스마트도시·데이터사이언스전공"]
-            }
-        };
-
-        const univSelect = document.getElementById('univSelect');
-        const categorySelect = document.getElementById('categorySelect');
-        const deptSelect = document.getElementById('deptSelect');
-
-        Object.keys(universityData).forEach(univ => {
-            if(univSelect) univSelect.add(new Option(univ, univ));
-        });
-
-        addEvent('univSelect', 'change', function() {
-            categorySelect.innerHTML = '<option value="">2. 계열 선택</option>';
-            deptSelect.innerHTML = '<option value="">3. 학과 선택</option>';
-            deptSelect.disabled = true;
-
-            const selectedUniv = this.value;
-            const titleEl = document.getElementById('careerTitle');
-            const descEl = document.getElementById('careerDesc');
-            
-            if(titleEl && descEl) {
-                if(selectedUniv === "서강대학교") {
-                    titleEl.textContent = "성장가능성 (서강대 특화)";
-                    descEl.textContent = "전공적합성 배제, 융합적 사고와 경험에 대한 개방성, 주도성";
-                } else if(selectedUniv === "홍익대학교") {
-                    titleEl.textContent = "창의·융합적 사고능력 (홍익대)";
-                    descEl.textContent = "다양한 영역의 지식을 연결하여 창의적으로 문제를 해결하는 역량";
-                } else if(selectedUniv === "건국대학교") {
-                    titleEl.textContent = "성장역량 (건국대 특화)";
-                    descEl.textContent = "필수 과목 미지정. 스스로 경험을 확장하고 오류를 극복한 진짜 탐구 과정";
-                } else {
-                    titleEl.textContent = "진로역량";
-                    descEl.textContent = "전공 관련 능동적 교과 이수 노력, 진로 탐색 및 성장 경험";
-                }
-            }
-
-            if (selectedUniv && universityData[selectedUniv]) {
-                categorySelect.disabled = false;
-                Object.keys(universityData[selectedUniv]).forEach(cat => {
-                    categorySelect.add(new Option(cat, cat));
-                });
-            } else {
-                categorySelect.disabled = true;
-            }
-        });
-
-        addEvent('categorySelect', 'change', function() {
-            deptSelect.innerHTML = '<option value="">3. 학과 선택</option>';
-            const selectedUniv = univSelect.value;
-            const selectedCat = this.value;
-            
-            if (selectedCat && universityData[selectedUniv][selectedCat]) {
-                deptSelect.disabled = false;
-                universityData[selectedUniv][selectedCat].forEach(dept => {
-                    deptSelect.add(new Option(dept, dept));
-                });
-            } else {
-                deptSelect.disabled = true;
-            }
-        });
-
-
-        // ==========================================
-        // 2. 브라우저 기반 학생 DB (강력한 나이스 엑셀 파서)
+        // 1. 학생 데이터베이스 관리 로직 (엑셀 파싱)
         // ==========================================
         let studentDB = JSON.parse(localStorage.getItem('studentDB')) || {};
 
@@ -596,139 +331,59 @@
         }
 
         function getOrCreateStudent(name) {
-            if (!name) return null;
-            name = name.replace(/\s+/g, ''); // 이름 공백 제거 정규화
+            name = name.replace(/\s+/g, ''); // 공백 제거
             if (!studentDB[name]) {
-                studentDB[name] = { 
-                    name: name, grade: "", class: "", no: "", 
-                    subjects: [], changche: [], haengteuk: [] 
-                };
+                studentDB[name] = { name: name, grade: "", class: "", no: "", subjects: [], changche: [], haengteuk: [] };
             }
             return studentDB[name];
         }
 
         function updateStudentDropdown() {
-            const select = document.getElementById('dbStudentSelect');
-            const viewBtn = document.getElementById('viewPortfolioBtn');
-            if (!select) return;
-            
+            const select = document.getElementById('studentSelect');
             select.innerHTML = '<option value="">-- 평가할 학생을 선택하세요 --</option>';
             
-            const studentsArray = Object.values(studentDB).sort((a, b) => a.name.localeCompare(b.name));
-
-            studentsArray.forEach(s => {
-                const totalRecords = s.subjects.length + s.changche.length + s.haengteuk.length;
-                let label = s.grade ? `${s.grade}학년 ${s.class}반 ${s.no}번 ${s.name} (기록: ${totalRecords}건)` : `${s.name} (기록: ${totalRecords}건)`;
-                select.add(new Option(label, s.name));
+            const students = Object.values(studentDB).sort((a, b) => a.name.localeCompare(b.name));
+            students.forEach(s => {
+                const info = s.grade ? `[${s.grade}-${s.class}-${s.no}] ` : "";
+                const recordCount = s.subjects.length + s.changche.length + s.haengteuk.length;
+                select.add(new Option(`${info}${s.name} (기록 ${recordCount}건)`, s.name));
             });
-
-            const statusEl = document.getElementById('dbStatus');
-            if(statusEl) statusEl.textContent = `등록 학생: ${studentsArray.length}명`;
             
-            if (select.value === "") {
-                if (viewBtn) {
-                   viewBtn.classList.add('hidden');
-                   viewBtn.classList.remove('md:flex', 'flex');
-                }
-            }
+            document.getElementById('dbStatus').textContent = `${students.length}명`;
+            checkButtonsState();
         }
-        
-        addEvent('dbStudentSelect', 'change', (e) => {
-            const nameKey = e.target.value;
-            const seTeukInput = document.getElementById('seTeukInput');
-            const viewBtn = document.getElementById('viewPortfolioBtn');
-            
-            if(!nameKey) {
-                if(seTeukInput) seTeukInput.value = "";
-                if(viewBtn) {
-                    viewBtn.classList.add('hidden');
-                    viewBtn.classList.remove('md:flex', 'flex');
-                }
-                return;
-            }
-            
-            if(viewBtn) {
-                viewBtn.classList.remove('hidden');
-                viewBtn.classList.add('flex', 'md:flex');
-            }
 
-            const student = studentDB[nameKey];
-            if(student) {
-                let info = student.grade ? `${student.grade}학년 ${student.class}반 ${student.no}번 ` : "";
-                const nameInfoEl = document.getElementById('pdfStudentNameInfo');
-                if(nameInfoEl) nameInfoEl.textContent = `평가 대상: ${info}${student.name} 학생`;
-                
-                let combinedText = `[학생 정보: ${info}${student.name}]\n\n`;
-                
-                if(student.subjects.length > 0) {
-                    combinedText += `--- 교과 세특 ---\n`;
-                    student.subjects.forEach(r => combinedText += `[${r.title}] ${r.content}\n`);
-                    combinedText += `\n`;
-                }
-                if(student.changche.length > 0) {
-                    combinedText += `--- 창체 활동 ---\n`;
-                    student.changche.forEach(r => combinedText += `[${r.title}] ${r.content}\n`);
-                    combinedText += `\n`;
-                }
-                if(student.haengteuk.length > 0) {
-                    combinedText += `--- 행동특성 ---\n`;
-                    student.haengteuk.forEach(r => combinedText += `${r.content}\n`);
-                    combinedText += `\n`;
-                }
-
-                if(seTeukInput) seTeukInput.value = combinedText;
-            }
-        });
-
-
-        // ★ 나이스(NEIS) 양식 100% 호환 범용 파서 (세특, 창체, 행특 용) ★
+        // 엑셀 공통 파서 (교과, 창체, 행특)
         function parseExcelData(workbook, type) {
             const sheet = workbook.Sheets[workbook.SheetNames[0]];
-            const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" }); // 2차원 배열로 읽기
+            const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
             
             let nameIdx = -1, contentIdx = -1, domainIdx = -1, subjIdx = -1;
-            let headerFound = false;
-            let currentName = "";
-            let count = 0;
+            let headerFound = false, currentName = "", count = 0;
 
             for (let i = 0; i < rows.length; i++) {
                 let row = rows[i];
-                if (!row || row.length === 0) continue; // 빈 줄 건너뛰기
+                if (!row || row.length === 0) continue;
 
-                // 1. 헤더 찾기
                 if (!headerFound) {
                     for (let j = 0; j < row.length; j++) {
-                        let cell = String(row[j] || "").trim();
-                        let cleanCell = cell.replace(/\s+/g, '');
-
-                        // 헤더 열 위치 식별
+                        let cleanCell = String(row[j]).replace(/\s+/g, '');
                         if (cleanCell.includes("성명") || cleanCell.includes("이름")) nameIdx = j;
                         if (cleanCell.includes("특기사항") || cleanCell.includes("행동특성") || cleanCell.includes("세부능력") || cleanCell.includes("종합의견") || cleanCell === "내용") contentIdx = j;
                         if (cleanCell.includes("영역") || cleanCell.includes("활동영역") || cleanCell === "구분") domainIdx = j;
                         if (cleanCell === "과목" || cleanCell === "교과" || cleanCell.includes("과목명")) subjIdx = j;
                     }
-                    
-                    if (nameIdx !== -1 && contentIdx !== -1) {
-                        headerFound = true; // 헤더를 찾았으므로 다음 줄부터 데이터로 인식
-                    }
+                    if (nameIdx !== -1 && contentIdx !== -1) headerFound = true;
                     continue; 
                 }
 
-                // 2. 데이터 읽기
                 let cellName = String(row[nameIdx] || "").replace(/\s+/g, '');
-                
-                // 이름이 있으면 갱신 (나이스 병합셀은 첫 줄에만 이름이 있으므로, 이름이 없으면 이전 이름 유지)
-                if (cellName && cellName !== "성명" && cellName !== "이름") {
-                    currentName = cellName;
-                }
-                
-                if (!currentName) continue; // 이름을 한 번도 못 찾았으면 건너뜀
+                if (cellName && cellName !== "성명" && cellName !== "이름") currentName = cellName;
+                if (!currentName) continue; 
 
-                const student = getOrCreateStudent(currentName);
-                
-                // 세특 데이터 저장
                 let content = String(row[contentIdx] || "").trim();
-                if (content && content.length > 5) { // 5자 이상 유의미한 내용만
+                if (content && content.length > 5) {
+                    const student = getOrCreateStudent(currentName);
                     if (type === 'subject') {
                         let subj = subjIdx !== -1 && row[subjIdx] ? String(row[subjIdx]).trim() : "교과세특";
                         student.subjects.push({ title: subj, content: content });
@@ -744,523 +399,314 @@
             return count;
         }
 
-        // ★ 초강력 나이스 학년이력 + 일반 명단 파서 ★
+        // 명단 파서 (학년이력)
         function parseStudentList(workbook) {
             const sheet = workbook.Sheets[workbook.SheetNames[0]];
             const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
             
             let nameIdx = -1, gradeIdx = -1, classIdx = -1, noIdx = -1;
-            let headerFound = false;
-            let currentName = "";
-            let globalGrade = "";
-            let globalClass = "";
-            let initialCount = Object.keys(studentDB).length;
+            let globalGrade = "", globalClass = "", currentName = "", count = 0;
 
             for (let i = 0; i < rows.length; i++) {
                 let row = rows[i];
                 if (!row || row.length === 0) continue;
 
-                // 상단 타이틀 등에서 학년 반 전체 추출
                 for (let j = 0; j < row.length; j++) {
-                    let cell = String(row[j] || "").trim();
-                    let match = cell.match(/(\d+)\s*학년\s*(\d+)\s*반/);
-                    if (match) {
-                        globalGrade = match[1];
-                        globalClass = match[2];
-                    }
+                    let match = String(row[j]).match(/(\d+)\s*학년\s*(\d+)\s*반/);
+                    if (match) { globalGrade = match[1]; globalClass = match[2]; }
                 }
 
-                // 헤더 탐색 (학년이력 양식은 헤더가 여러 줄에 걸쳐 있을 수 있음)
                 for (let j = 0; j < row.length; j++) {
-                    let cleanCell = String(row[j] || "").replace(/\s+/g, '');
+                    let cleanCell = String(row[j]).replace(/\s+/g, '');
                     if (cleanCell === "성명" || cleanCell === "이름") nameIdx = j;
                     if (cleanCell === "학년") gradeIdx = j;
                     if (cleanCell === "반") classIdx = j;
-                    if (cleanCell === "번호") {
-                        // 학생 번호와 학년이력 번호가 둘 다 있을 경우, 학년이력 쪽(더 큰 인덱스) 우선
-                        if (nameIdx !== -1 && j > nameIdx) {
-                            noIdx = j;
-                        } else if (noIdx === -1) {
-                            noIdx = j;
-                        }
-                    }
+                    if (cleanCell === "번호") noIdx = j;
                 }
 
-                // 이름을 찾았으면 그 다음부터 데이터를 수집할 준비 완료
                 if (nameIdx !== -1) {
                     let nameCell = String(row[nameIdx] || "").replace(/\s+/g, '');
-                    // 헤더 텍스트인 경우 건너뜀
                     if (nameCell === "성명" || nameCell === "이름") continue;
-                    
-                    if (nameCell) {
-                        currentName = nameCell; // 새로운 학생 이름 발견
-                    }
-
+                    if (nameCell) currentName = nameCell;
                     if (!currentName) continue;
 
-                    // 학생 객체 가져오거나 생성
                     let s = getOrCreateStudent(currentName);
-                    
-                    let g = gradeIdx !== -1 ? String(row[gradeIdx] || "").trim() : "";
-                    let c = classIdx !== -1 ? String(row[classIdx] || "").trim() : "";
-                    let n = noIdx !== -1 ? String(row[noIdx] || "").trim() : "";
+                    let g = gradeIdx !== -1 ? String(row[gradeIdx]).trim() : "";
+                    let c = classIdx !== -1 ? String(row[classIdx]).trim() : "";
+                    let n = noIdx !== -1 ? String(row[noIdx]).trim() : "";
 
-                    // 학년, 반, 번호가 숫자로 된 정상 데이터인 경우만 업데이트
-                    // 파일의 행을 순차적으로 내려가면서 계속 덮어쓰기 때문에 가장 마지막 행(최신 학년) 정보가 최종 저장됨
-                    if (g && !isNaN(parseInt(g))) s.grade = g;
-                    else if (globalGrade && !s.grade) s.grade = globalGrade;
-
-                    if (c && !isNaN(parseInt(c))) s.class = c;
-                    else if (globalClass && !s.class) s.class = globalClass;
-
+                    if (g && !isNaN(parseInt(g))) s.grade = g; else if (globalGrade) s.grade = globalGrade;
+                    if (c && !isNaN(parseInt(c))) s.class = c; else if (globalClass) s.class = globalClass;
                     if (n && !isNaN(parseInt(n))) s.no = n;
+                    count++;
                 }
             }
-
-            // 잘못 생성된 쓰레기 데이터 정리 (이름이 너무 짧거나 숫자인 경우 삭제)
-            for(let key in studentDB) {
-                if(key.length < 2 || !isNaN(key) || (!studentDB[key].grade && !studentDB[key].class && studentDB[key].subjects.length === 0 && studentDB[key].changche.length === 0 && studentDB[key].haengteuk.length === 0)) {
-                    delete studentDB[key];
-                }
-            }
-
-            let newCount = Object.keys(studentDB).length - initialCount;
-            return newCount > 0 ? newCount : Object.keys(studentDB).length;
+            return count > 0 ? Object.keys(studentDB).length : 0; // 대략적인 수치
         }
 
-        // 파일 리더 헬퍼
-        function handleExcelUpload(e, type, successMsg) {
-            const file = e.target.files[0]; 
+        // 업로드 핸들러
+        function handleUpload(e, type, msg) {
+            const file = e.target.files[0];
             if (!file) return;
-            
             const reader = new FileReader();
-            reader.onload = function(evt) {
+            reader.onload = (evt) => {
                 try {
                     const data = new Uint8Array(evt.target.result);
                     const workbook = XLSX.read(data, { type: 'array' });
+                    const count = type === 'list' ? parseStudentList(workbook) : parseExcelData(workbook, type);
                     
-                    let count = 0;
-                    if (type === 'list') {
-                        count = parseStudentList(workbook);
+                    if (count > 0) {
+                        saveDB();
+                        showToast(`성공적으로 처리되었습니다! (${count}건)`);
                     } else {
-                        count = parseExcelData(workbook, type);
+                        showToast("데이터를 추출하지 못했습니다.", true);
                     }
-                    
-                    if(count > 0) { 
-                        saveDB(); 
-                        showToast(`${count}${successMsg}`); 
-                    } else {
-                        showToast("데이터를 추출하지 못했습니다. 파일 양식을 확인해주세요.", true);
-                    }
-                } catch(error) {
-                    showToast("파일을 읽는 중 오류가 발생했습니다.", true);
-                    console.error(error);
-                }
-                e.target.value = ""; // 파일 입력창 초기화
+                } catch(error) { showToast("엑셀 파일 파싱 에러", true); }
+                e.target.value = ""; 
             };
             reader.readAsArrayBuffer(file);
         }
 
-        // 각 업로드 버튼에 이벤트 연결
-        addEvent('studentCsvUpload', 'change', (e) => handleExcelUpload(e, 'list', '명의 학생 인적사항이 업데이트 되었습니다.'));
-        addEvent('subjectCsvUpload', 'change', (e) => handleExcelUpload(e, 'subject', '건의 교과 세특이 학생별로 정리되었습니다.'));
-        addEvent('changcheCsvUpload', 'change', (e) => handleExcelUpload(e, 'changche', '건의 창체 활동이 학생별로 정리되었습니다.'));
-        addEvent('haengteukCsvUpload', 'change', (e) => handleExcelUpload(e, 'haengteuk', '건의 행동특성 의견이 학생별로 정리되었습니다.'));
+        document.getElementById('uploadList').addEventListener('change', e => handleUpload(e, 'list'));
+        document.getElementById('uploadSubject').addEventListener('change', e => handleUpload(e, 'subject'));
+        document.getElementById('uploadChangche').addEventListener('change', e => handleUpload(e, 'changche'));
+        document.getElementById('uploadHaengteuk').addEventListener('change', e => handleUpload(e, 'haengteuk'));
 
-        // DB 초기화 모달 로직
-        function openConfirmModal() {
-            const modal = document.getElementById('confirmModal');
-            if(modal) {
-                modal.classList.remove('hidden');
-                setTimeout(() => {
-                    modal.classList.remove('opacity-0');
-                    modal.querySelector('div').classList.remove('scale-95');
-                }, 10);
+        function resetDB() {
+            if(confirm("모든 학생 데이터가 브라우저에서 삭제됩니다. 진행하시겠습니까?")) {
+                studentDB = {};
+                saveDB();
+                document.getElementById('recordInput').value = "";
+                document.getElementById('resultSection').classList.add('hidden');
+                showToast("DB가 초기화되었습니다.");
             }
         }
 
-        function closeConfirmModal() {
-            const modal = document.getElementById('confirmModal');
-            if(modal) {
-                modal.classList.add('opacity-0');
-                modal.querySelector('div').classList.add('scale-95');
-                setTimeout(() => modal.classList.add('hidden'), 300);
-            }
-        }
-
-        function executeResetDB() {
-            studentDB = {};
-            saveDB();
-            
-            const seTeukInput = document.getElementById('seTeukInput');
-            if(seTeukInput) seTeukInput.value = "";
-            
-            const nameInfo = document.getElementById('pdfStudentNameInfo');
-            if(nameInfo) nameInfo.textContent = `평가 대상: 미지정`;
-            
-            const viewBtn = document.getElementById('viewPortfolioBtn');
-            if (viewBtn) {
-               viewBtn.classList.add('hidden');
-               viewBtn.classList.remove('flex', 'md:flex');
-            }
-            closeConfirmModal();
-            showToast("DB가 성공적으로 초기화되었습니다.");
-        }
-
-        addEvent('btnResetDB', 'click', openConfirmModal);
-        addEvent('btnCancelReset', 'click', closeConfirmModal);
-        addEvent('btnConfirmReset', 'click', executeResetDB);
-
-        // 초기 실행
-        updateStudentDropdown();
 
         // ==========================================
-        // ★ 통합 포트폴리오 보기 및 다운로드 로직 ★
+        // 2. UI 상호작용 및 PDF 생성 로직
         // ==========================================
-        addEvent('viewPortfolioBtn', 'click', () => {
-            const nameKey = document.getElementById('dbStudentSelect').value;
-            if(!nameKey || !studentDB[nameKey]) return;
-            
+        const studentSelect = document.getElementById('studentSelect');
+        const majorSelect = document.getElementById('majorSelect');
+        const recordInput = document.getElementById('recordInput');
+        const viewPdfBtn = document.getElementById('viewPdfBtn');
+        const analyzeBtn = document.getElementById('analyzeBtn');
+
+        function checkButtonsState() {
+            const hasStudent = studentSelect.value !== "";
+            const hasText = recordInput.value.trim().length > 0;
+            viewPdfBtn.disabled = !hasStudent;
+            analyzeBtn.disabled = !(hasStudent && hasText);
+        }
+
+        studentSelect.addEventListener('change', (e) => {
+            const nameKey = e.target.value;
+            if(!nameKey || !studentDB[nameKey]) {
+                recordInput.value = "";
+                checkButtonsState();
+                return;
+            }
+
             const student = studentDB[nameKey];
-            let info = student.grade ? `${student.grade}학년 ${student.class}반 ${student.no}번 ` : "";
-            document.getElementById('portfolioStudentName').textContent = `${info}${student.name}`;
+            let info = student.grade ? `[${student.grade}학년 ${student.class}반 ${student.no}번] ` : "";
+            
+            // Textarea 업데이트
+            let combinedText = `학생: ${info}${student.name}\n\n`;
+            if(student.subjects.length) {
+                combinedText += `--- 교과 세특 ---\n`;
+                student.subjects.forEach(r => combinedText += `[${r.title}] ${r.content}\n\n`);
+            }
+            if(student.changche.length) {
+                combinedText += `--- 창체 활동 ---\n`;
+                student.changche.forEach(r => combinedText += `[${r.title}] ${r.content}\n\n`);
+            }
+            if(student.haengteuk.length) {
+                combinedText += `--- 행동특성 ---\n`;
+                student.haengteuk.forEach(r => combinedText += `${r.content}\n\n`);
+            }
+            recordInput.value = combinedText;
+            
+            // PDF 준비 업데이트
             document.getElementById('pdfPortfolioName').textContent = `${info}${student.name}`;
+            
+            const fillHTML = (containerId, dataArray, isTitleRequired) => {
+                const container = document.getElementById(containerId);
+                container.innerHTML = dataArray.length === 0 ? '<p class="text-sm text-slate-400">기록이 없습니다.</p>' : '';
+                dataArray.forEach(item => {
+                    const titleHTML = isTitleRequired ? `<span class="inline-block px-2 py-1 bg-slate-200 text-slate-800 text-xs font-bold rounded mb-1">${item.title}</span><br>` : '';
+                    container.innerHTML += `<div class="mb-3 border-b border-slate-100 pb-2 last:border-0">${titleHTML}<p class="text-sm text-slate-700 whitespace-pre-wrap">${item.content}</p></div>`;
+                });
+            };
+            
+            fillHTML('pfSubjects', student.subjects, true);
+            fillHTML('pfChangche', student.changche, true);
+            fillHTML('pfHaengteuk', student.haengteuk, false);
 
-            // 교과 렌더링
-            const subjContainer = document.getElementById('pfSubjects');
-            subjContainer.innerHTML = '';
-            if(student.subjects.length === 0) subjContainer.innerHTML = '<p class="text-sm text-slate-400 italic">등록된 교과 세특이 없습니다.</p>';
-            student.subjects.forEach(item => {
-                subjContainer.innerHTML += `
-                    <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-100">
-                        <span class="inline-block px-2.5 py-1 bg-indigo-200 text-indigo-800 text-xs font-bold rounded mb-2">${item.title}</span>
-                        <p class="text-sm text-slate-700 leading-relaxed">${item.content}</p>
-                    </div>`;
+            checkButtonsState();
+        });
+
+        recordInput.addEventListener('input', checkButtonsState);
+
+        // PDF 다운로드 이벤트 (html2pdf)
+        viewPdfBtn.addEventListener('click', () => {
+            const printArea = document.getElementById('pdfPrintArea');
+            const studentName = studentSelect.value;
+            
+            printArea.classList.remove('hidden');
+            printArea.style.display = 'block'; // Ensure it's rendered for html2pdf
+            
+            const header = printArea.querySelector('.pdf-only-header');
+            header.style.display = 'block';
+
+            showToast("PDF 생성을 시작합니다. 잠시만 기다려주세요...");
+
+            const opt = {
+                margin:       15,
+                filename:     `${studentName}_종합포트폴리오.pdf`,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+
+            html2pdf().set(opt).from(printArea).save().then(() => {
+                printArea.classList.add('hidden');
+                printArea.style.display = 'none';
+                header.style.display = 'none';
+                showToast("PDF가 다운로드 되었습니다.");
             });
+        });
 
-            // 창체 렌더링
-            const ccContainer = document.getElementById('pfChangche');
-            ccContainer.innerHTML = '';
-            if(student.changche.length === 0) ccContainer.innerHTML = '<p class="text-sm text-slate-400 italic">등록된 창체 활동이 없습니다.</p>';
-            student.changche.forEach(item => {
-                ccContainer.innerHTML += `
-                    <div class="bg-emerald-50 p-4 rounded-xl border border-emerald-100">
-                        <span class="inline-block px-2.5 py-1 bg-emerald-200 text-emerald-800 text-xs font-bold rounded mb-2">${item.title}</span>
-                        <p class="text-sm text-slate-700 leading-relaxed">${item.content}</p>
-                    </div>`;
-            });
+        // ==========================================
+        // 3. AI 입학사정관 평가 로직 (백엔드 연동)
+        // ==========================================
+        let analysisData = null;
 
-            // 행특 렌더링
-            const htContainer = document.getElementById('pfHaengteuk');
-            htContainer.innerHTML = '';
-            if(student.haengteuk.length === 0) htContainer.innerHTML = '<p class="text-sm text-slate-400 italic">등록된 행동특성 의견이 없습니다.</p>';
-            student.haengteuk.forEach(item => {
-                htContainer.innerHTML += `
-                    <div class="bg-amber-50 p-4 rounded-xl border border-amber-100">
-                        <p class="text-sm text-slate-700 leading-relaxed">${item.content}</p>
-                    </div>`;
-            });
+        analyzeBtn.addEventListener('click', async () => {
+            const major = majorSelect.value;
+            const text = recordInput.value.trim();
 
-            const modal = document.getElementById('portfolioModal');
-            const overlay = document.getElementById('portfolioModalOverlay');
+            if (!major) return alert("평가를 위해 B. 지원 희망 학과를 선택해주세요.");
+
+            document.getElementById('resultSection').classList.add('hidden');
+            document.getElementById('loadingSection').classList.remove('hidden');
+            document.getElementById('loadingSection').classList.add('flex');
+
+            try {
+                // 백엔드 서버(/api/analyze)로 분석 요청을 보냅니다. (API 키 노출 방지)
+                const response = await fetch('/api/analyze', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ major: major, text: text })
+                });
+
+                if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
+                
+                analysisData = await response.json();
+                renderResultDashboard(major, analysisData);
+
+            } catch (error) {
+                console.error(error);
+                alert("AI 분석 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
+            } finally {
+                document.getElementById('loadingSection').classList.add('hidden');
+                document.getElementById('loadingSection').classList.remove('flex');
+            }
+        });
+
+        function renderResultDashboard(major, data) {
+            document.getElementById('resMajor').textContent = major;
+            document.getElementById('resComment').textContent = data.overallComment;
+            
+            setTimeout(() => {
+                document.getElementById('resSuitability').innerHTML = `${data.suitabilityPercent}<span class="text-3xl">%</span>`;
+                document.getElementById('resSuitabilityBar').style.width = `${data.suitabilityPercent}%`;
+            }, 100);
+
+            const setCard = (type, comp) => {
+                document.getElementById(`grade-${type}`).textContent = comp.grade;
+                document.getElementById(`score-${type}`).textContent = `${comp.score}점`;
+            };
+            setCard('academic', data.academic);
+            setCard('career', data.career);
+            setCard('community', data.community);
+
+            document.getElementById('resultSection').classList.remove('hidden');
+            document.getElementById('resultSection').classList.add('flex');
+            document.getElementById('resultSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        function openDetailModal(type) {
+            if (!analysisData || !analysisData[type]) return;
+
+            const modalInfo = {
+                academic: { title: "학업역량 상세 판단 근거", color: "text-indigo-600" },
+                career: { title: "진로역량 상세 판단 근거", color: "text-emerald-600" },
+                community: { title: "공동체역량 상세 판단 근거", color: "text-amber-600" }
+            };
+
+            document.getElementById('modalTitle').textContent = modalInfo[type].title;
+            document.getElementById('modalTitle').className = `text-2xl font-black ${modalInfo[type].color}`;
+
+            const tbody = document.getElementById('modalTableBody');
+            const emptyState = document.getElementById('emptyState');
+            tbody.innerHTML = '';
+            
+            const details = analysisData[type].details || [];
+            if (details.length === 0) {
+                emptyState.classList.remove('hidden');
+            } else {
+                emptyState.classList.add('hidden');
+                details.forEach(d => {
+                    tbody.innerHTML += `
+                        <tr class="hover:bg-slate-50 border-b border-slate-200">
+                            <td class="px-6 py-5 text-sm font-bold text-slate-800 border-r border-slate-200 align-top bg-slate-50/50">${d.item}</td>
+                            <td class="px-6 py-5 text-sm text-slate-600 leading-relaxed border-r border-slate-200 align-top">"${d.extracted}"</td>
+                            <td class="px-6 py-5 text-sm text-slate-700 font-medium leading-relaxed align-top">${d.comment}</td>
+                        </tr>
+                    `;
+                });
+            }
+
+            const overlay = document.getElementById('modalOverlay');
+            const modal = document.getElementById('detailModal');
             overlay.classList.remove('hidden');
             modal.classList.remove('hidden');
             modal.classList.add('flex');
             
+            void modal.offsetWidth; 
+            overlay.classList.remove('opacity-0');
+            modal.classList.remove('opacity-0', 'scale-95');
+            modal.classList.add('opacity-100', 'scale-100');
+        }
+
+        function closeDetailModal() {
+            const overlay = document.getElementById('modalOverlay');
+            const modal = document.getElementById('detailModal');
+            overlay.classList.add('opacity-0');
+            modal.classList.remove('opacity-100', 'scale-100');
+            modal.classList.add('opacity-0', 'scale-95');
             setTimeout(() => {
-                overlay.classList.remove('opacity-0');
-                modal.classList.remove('opacity-0', 'scale-95');
-                modal.classList.add('opacity-100', 'scale-100');
-            }, 10);
-        });
-
-        function closeModal(modalId) {
-            const modal = document.getElementById(modalId);
-            let overlayId = modalId === 'portfolioModal' ? 'portfolioModalOverlay' : 'modalOverlay';
-            const overlay = document.getElementById(overlayId);
-            
-            if(overlay) overlay.classList.add('opacity-0');
-            if(modal) {
-                modal.classList.remove('opacity-100', 'scale-100');
-                modal.classList.add('opacity-0', 'scale-95');
-                setTimeout(() => {
-                    if(overlay) overlay.classList.add('hidden');
-                    modal.classList.add('hidden');
-                    modal.classList.remove('flex');
-                }, 300);
-            }
+                overlay.classList.add('hidden');
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }, 300);
         }
 
-        addEvent('closeDetailModalBtn', 'click', () => closeModal('detailModal'));
-        addEvent('closeDetailModalBtn2', 'click', () => closeModal('detailModal'));
-        addEvent('closePortfolioModalBtn', 'click', () => closeModal('portfolioModal'));
-        addEvent('modalOverlay', 'click', () => closeModal('detailModal'));
-        addEvent('portfolioModalOverlay', 'click', () => closeModal('portfolioModal'));
-
-
-        function downloadPortfolioExcel() {
-            const nameKey = document.getElementById('dbStudentSelect').value;
-            if(!nameKey || !studentDB[nameKey]) return;
-            const student = studentDB[nameKey];
-
-            const wsData = [
-                ["학생명", student.name],
-                ["학적사항", `${student.grade || ''}학년 ${student.class || ''}반 ${student.no || ''}번`],
-                [],
-                ["구분", "과목/영역", "내용"]
-            ];
-
-            student.subjects.forEach(s => wsData.push(["교과 세특", s.title, s.content]));
-            student.changche.forEach(c => wsData.push(["창의적 체험활동", c.title, c.content]));
-            student.haengteuk.forEach(h => wsData.push(["행동특성 및 종합의견", "행특", h.content]));
-
-            const ws = XLSX.utils.aoa_to_sheet(wsData);
-            ws['!cols'] = [{wch: 15}, {wch: 20}, {wch: 100}];
-
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "포트폴리오");
-            XLSX.writeFile(wb, `${student.name}_학생부_포트폴리오.xlsx`);
-        }
-        addEvent('btnExcelSave', 'click', downloadPortfolioExcel);
-
-        function downloadPortfolioPDF() {
-            const printArea = document.getElementById('portfolioPrintArea');
-            const nameKey = document.getElementById('dbStudentSelect').value;
-            const student = studentDB[nameKey];
+        function showToast(msg, isError = false) {
+            const toast = document.createElement('div');
+            toast.className = `px-6 py-3 rounded-xl shadow-lg text-white font-bold text-sm transform transition-all duration-300 translate-y-10 opacity-0 ${isError ? 'bg-rose-600' : 'bg-slate-800'}`;
+            toast.textContent = msg;
+            document.getElementById('toastContainer').appendChild(toast);
             
-            const header = printArea.querySelector('.pdf-only-header');
-            header.classList.remove('hidden');
-
-            const opt = {
-                margin:       15,
-                filename:     `${student.name}_학생부_포트폴리오.pdf`,
-                image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2, useCORS: true },
-                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
-            };
-
-            html2pdf().set(opt).from(printArea).save().then(() => {
-                header.classList.add('hidden');
-            });
-        }
-        addEvent('btnPdfSave', 'click', downloadPortfolioPDF);
-
-
-        // ==========================================
-        // 3. AI 분석 로직
-        // ==========================================
-        function getUniversityGuidelines(targetDept) {
-            let guide = "";
-            if (targetDept.includes("서울대학교")) {
-                guide += `\n[🏫 서울대학교 특별 평가 지침]\n`;
-                guide += `- 핵심 기조: 단순 암기보다 '깊이 있는 이해'와 지식을 활용해 성장한 '과정'을 최우선 평가합니다.\n`;
-                if (targetDept.match(/컴퓨터|산업공학|수리과학|통계|경제/)) guide += `- 전공 특화: '미적분', '확률과 통계' 중심의 수학적 논리력을 중점 평가하세요.\n`;
-                else if (targetDept.match(/의예|약학|생명|화학/)) guide += `- 전공 특화: '화학/생명과학' 중심의 깊이 있는 탐구력과 실험 과정을 중점 평가하세요.\n`;
-                else guide += `- 전공 특화: 전공에 필요한 기초 과목 도전과 폭넓은 융합적 소양을 평가하세요.\n`;
-            } else if (targetDept.includes("연세대학교")) {
-                guide += `\n[🦅 연세대학교 특별 평가 지침]\n`;
-                guide += `- 핵심 기조: 주어진 고교 환경 내에서의 '노력과 성실함', 과목 미개설 시 '공동교육과정' 등을 통한 극복 노력을 극찬하세요.\n`;
-                if (targetDept.match(/컴퓨터|기계|전자/)) guide += `- 전공 특화: 수학(미적분/기하) 및 물리 역량의 주도적 이수 노력을 엄격히 평가하세요.\n`;
-                else if (targetDept.match(/의예|약학|생명/)) guide += `- 전공 특화: 수학(미적분) 및 화학/생명과학 핵심 역량과 지식 확장 경험을 평가하세요.\n`;
-                else guide += `- 전공 특화: 폭넓은 독서와 다방면의 인문/사회적 소양 탐구 과정을 중점 평가하세요.\n`;
-            } else if (targetDept.includes("고려대학교")) {
-                guide += `\n[🐯 고려대학교 특별 평가 지침]\n`;
-                guide += `- 핵심 기조: 환경을 극복한 '자기계발 역량'과 논문/전공서적 등을 활용한 '깊고 폭넓은 탐구역량'을 매우 중시합니다.\n`;
-                if (targetDept.match(/기계|전기|전자|컴퓨터|보안/)) guide += `- 전공 특화: 공학/정보의 기초인 수학(미적분/기하)과 물리 역량 기반의 문제해결력을 최우선 평가하세요.\n`;
-                else if (targetDept.match(/의학|생명|보건/)) guide += `- 전공 특화: 화학과 생명과학 기반의 심도 있는 탐구 과정을 엄격히 평가하세요.\n`;
-                else guide += `- 전공 특화: 융복합적 사고력과 논리적 통찰력을 집중적으로 살펴봅니다.\n`;
-            } else if (targetDept.includes("서강대학교")) {
-                guide += `\n[🕊️ 서강대학교 특별 평가 지침]\n`;
-                guide += `- 핵심 기조: 좁은 전공적합성을 평가하지 않습니다. 특정 학과에 얽매이지 않은 '탄탄한 기초 학업역량'과 '경험에 대한 개방성, 융합적 사고(성장가능성)'를 매우 높게 평가하세요.\n`;
-            } else if (targetDept.includes("한양대학교")) {
-                guide += `\n[🦁 한양대학교 특별 평가 지침]\n`;
-                guide += `- 핵심 기조: 실용학풍(IC-PBL). 배운 지식을 '현실의 문제'나 '데이터'에 적용해 분석하고 해결책을 도출한 융복합적 탐구 역량을 최우선으로 평가하세요.\n`;
-            } else if (targetDept.includes("중앙대학교")) {
-                guide += `\n[🏫 중앙대학교 특별 평가 지침]\n`;
-                guide += `- 핵심 기조: 전공 간 통합적 사고를 하는 '융합형'과 한 분야를 깊이 파고드는 '탐구형' 인재를 찾습니다. 지원 전공의 '핵심 권장과목' 이수 여부를 강력하게 평가하세요.\n`;
-            } else if (targetDept.includes("경희대학교")) {
-                guide += `\n[🦁 경희대학교 특별 평가 지침]\n`;
-                guide += `- 핵심 기조: 학과별 '수학 및 과학 핵심 권장과목' 이수 여부를 매우 엄격히 봅니다. 어려운 과목(기하, 과학Ⅱ 등)을 기피하지 않고 주도적으로 수강한 학업태도를 극찬하세요.\n`;
-            } else if (targetDept.includes("한국외국어대학교")) {
-                guide += `\n[🌐 한국외국어대학교 특별 평가 지침]\n`;
-                guide += `- 핵심 기조: 순수 어학보다 '외국어 + 데이터/AI/실무'를 결합한 융복합적 탐구 역량과 타 문화에 대한 포용력(개방성)을 최우선으로 높게 평가하세요.\n`;
-            } else if (targetDept.includes("서울시립대학교")) {
-                guide += `\n[🏛️ 서울시립대학교 특별 평가 지침]\n`;
-                guide += `- 핵심 기조: 학과별 '인재상 부합 여부'가 절대적 기준입니다. 선택의 '결과'보다 왜 그 과목/주제를 선택했는지 '주도적 증명 과정'을 매우 까다롭게 평가하세요.\n`;
-            } else if (targetDept.includes("건국대학교")) {
-                guide += `\n[🐂 건국대학교 특별 평가 지침]\n`;
-                guide += `- 핵심 기조: 필수 지정 과목이 없습니다. '성장역량(경험 확장, 오류 극복)'을 핵심으로, 투박하더라도 학생이 직접 발로 뛰어 실험/탐구한 진정성 있는 과정을 최우선 평가하세요.\n`;
-            } else if (targetDept.includes("동국대학교")) {
-                guide += `\n[🐘 동국대학교 특별 평가 지침]\n`;
-                guide += `- 핵심 기조: 맹목적인 학과 맞춤 활동보다, 해당 전공을 공부하기 위해 필수적인 '기본 교과 역량'과 명확한 학업적 목적의식이 드러나는 '학습의 주도성'을 비중 있게 평가하세요.\n`;
-            } else if (targetDept.includes("홍익대학교")) {
-                guide += `\n[🎨 홍익대학교 특별 평가 지침]\n`;
-                guide += `- 핵심 기조: 캠퍼스자율전공의 취지에 맞게 진로의 변경을 감점하지 않습니다. 다양한 영역의 지식을 하나로 엮어 문제를 해결하는 '창의·융합적 사고능력'을 최우선으로 평가하세요.\n`;
-            } else {
-                guide += `- 핵심 기조: 지원자의 동기, 과정, 성장, 그리고 자기주도성을 중점적으로 융합하여 평가하세요.\n`;
-            }
-            return guide;
-        }
-
-        let analysisResults = { academic: [], career: [], community: [] };
-        const loadingSection = document.getElementById('loadingSection');
-        const resultSection = document.getElementById('resultSection');
-
-        addEvent('analyzeBtn', 'click', async () => {
-            const text = document.getElementById('seTeukInput').value.trim();
-            const selectedUniv = document.getElementById('univSelect').value;
-            const selectedDept = document.getElementById('deptSelect').value;
-            
-            if(!selectedUniv || !selectedDept) return showToast("지원 희망 대학교와 학과를 최종적으로 선택해주세요.", true);
-            if(!text || text.length < 30) return showToast("정확한 문맥 분석을 위해 생기부 기록을 충분히 입력해주세요.", true);
-
-            const finalTargetDept = `${selectedUniv} ${selectedDept}`;
-            const univSpecificGuidelines = getUniversityGuidelines(finalTargetDept);
-
-            resultSection.classList.add('hidden');
-            loadingSection.classList.remove('hidden');
-            loadingSection.classList.add('flex');
-            
-            try {
-                const apiKey = ""; // API Key는 실행 환경에서 주입됩니다.
-                
-                const systemPrompt = `
-당신은 대학교의 매우 냉정하고 엄격한 베테랑 입학사정관입니다. 다음은 여러 과목이 종합된 학생의 '학교생활기록부(교과/창체/행특) 전체 모음'입니다. 이 텍스트를 종합적으로 심층 분석하여 '${finalTargetDept}'에 지원하는 학생의 핵심 역량을 평가해주세요. 
-
-[★ 서류 평가 공통 핵심 주안점 (매우 중요) ★]
-1. 결과보다는 활동의 동기와 과정, 성장 (심층 파악)
-2. 여러 영역(교과, 자율, 동아리, 진로, 행특) 간의 유기적 연계와 입체적 해석 (제출된 모든 기록을 융합적으로 평가하세요)
-3. 환경 속에서의 자기주도적 노력 (맥락적 평가)
-${univSpecificGuidelines}
-
-[평가 세부 기준]
-1. 학업/탐구역량: 전반적인 학업태도(자기주도성), 교과 세특 등에서 드러나는 끈질긴 탐구력
-2. 진로/계열역량(또는 융합/성장역량): 창체/진로활동 및 교과 이수를 통해 보여준 지원 전공에 대한 관심과 융합적 시각
-3. 공동체역량: 행특과 자율활동 등에서 나타난 협업, 배려, 실질적 리더십
-
-반드시 다음 형식의 JSON 형태(application/json)로만 응답해주세요. 마크다운 기호 없이 순수 JSON만 반환하세요.
-{
-  "overallScore": 0~100 사이 종합 점수,
-  "overallComment": "입학사정관의 총괄 평가 의견 (강점, 융합능력, 한계점 3~4문장)",
-  "academicScore": 0~100 사이 학업역량 점수,
-  "careerScore": 0~100 사이 진로역량 점수,
-  "communityScore": 0~100 사이 공동체역량 점수,
-  "academic": [{ "item": "세부항목", "keyword": "핵심 단어", "extracted": "[영역명] 원문", "comment": "코멘트" }],
-  "career": [{ "item": "세부항목", "keyword": "핵심 단어", "extracted": "[영역명] 원문", "comment": "코멘트" }],
-  "community": [{ "item": "세부항목", "keyword": "핵심 단어", "extracted": "[영역명] 원문", "comment": "코멘트" }]
-}
-`;
-                const userQuery = `지원 학과: ${finalTargetDept}\n종합 생기부 텍스트:\n${text}`;
-                
-                const payload = {
-                    contents: [{ parts: [{ text: userQuery }] }],
-                    systemInstruction: { parts: [{ text: systemPrompt }] },
-                    generationConfig: { responseMimeType: "application/json" }
-                };
-
-                const fetchWithRetry = async (url, options, retries = 5) => {
-                    let delay = 1000;
-                    for (let i = 0; i < retries; i++) {
-                        try {
-                            const res = await fetch(url, options);
-                            if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-                            return await res.json();
-                        } catch (err) {
-                            if (i === retries - 1) throw err;
-                            await new Promise(resolve => setTimeout(resolve, delay));
-                            delay *= 2;
-                        }
-                    }
-                };
-
-                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
-                const result = await fetchWithRetry(url, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(payload)
-                });
-
-                const jsonText = result.candidates?.[0]?.content?.parts?.[0]?.text;
-                if(!jsonText) throw new Error("응답 결과가 비어있습니다.");
-                
-                const data = JSON.parse(jsonText);
-
-                analysisResults = {
-                    academic: Array.isArray(data.academic) ? data.academic : [],
-                    career: Array.isArray(data.career) ? data.career : [],
-                    community: Array.isArray(data.community) ? data.community : []
-                };
-
-                renderDashboard(finalTargetDept, data);
-                
-                loadingSection.classList.add('hidden');
-                loadingSection.classList.remove('flex');
-                resultSection.classList.remove('hidden');
-                resultSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-
-            } catch (error) {
-                console.error("API 호출 오류:", error);
-                showToast("분석 중 오류가 발생했습니다. (API 연동 설정을 확인해주세요)", true);
-                loadingSection.classList.add('hidden');
-                loadingSection.classList.remove('flex');
-            }
-        });
-
-        function renderDashboard(dept, data) {
-            document.getElementById('resultDeptName').textContent = dept;
-            const score = data.overallScore || 0;
-            const comment = data.overallComment || '입력된 내용에서 과정과 성장에 대한 맥락을 충분히 파악하기 어렵습니다.';
-
+            setTimeout(() => { toast.classList.remove('translate-y-10', 'opacity-0'); }, 10);
             setTimeout(() => {
-                document.getElementById('overallScoreText').innerHTML = `${score}<span class="text-3xl text-slate-300">%</span>`;
-                document.getElementById('overallGradeText').textContent = "엄격한 종합 평가 적용됨";
-                document.getElementById('overallCommentText').textContent = comment;
-                document.getElementById('overallProgressBar').style.width = `${score}%`;
-            }, 100);
-
-            updateCardScore('academic', data.academicScore || 0);
-            updateCardScore('career', data.careerScore || 0);
-            updateCardScore('community', data.communityScore || 0);
+                toast.classList.add('translate-y-10', 'opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
         }
 
-        function updateCardScore(type, score) {
-            let textColor = 'text-slate-400';
-            if (score >= 90) textColor = type==='academic'?'text-indigo-600':(type==='career'?'text-emerald-600':'text-amber-600');
-            else if (score >= 70) textColor = type==='academic'?'text-indigo-400':(type==='career'?'text-emerald-400':'text-amber-400');
-            else textColor = 'text-rose-500';
-            
-            const el = document.getElementById(`grade-${type}`);
-            el.textContent = `${score}점`; 
-            el.className = `text-4xl font-black ${textColor} transition-colors duration-500`;
-        }
-
-        // ==========================================
-        // 4. 결과보고서 PDF 다운로드 로직
-        // ==========================================
-        addEvent('pdfDownloadBtn', 'click', () => {
-            const printArea = document.getElementById('pdfPrintArea');
-            const targetUniv = document.getElementById('resultDeptName').textContent.replace(/\s+/g, '_');
-            const selectEl = document.getElementById('dbStudentSelect');
-            const studentName = selectEl.selectedIndex > 0 ? selectEl.options[selectEl.selectedIndex].text.split(' ')[0] : "개별평가";
-            
-            printArea.classList.add('pdf-mode');
-            const header = printArea.querySelector('.pdf-only-header');
-            header.classList.remove('hidden');
-
-            const opt = {
-                margin:       10,
-                filename:     `평가보고서_${studentName}_${targetUniv}.pdf`,
-                image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2, useCORS: true },
-                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
-            };
-
-            html2pdf().set(opt).from(printArea).save().then(() => {
-                printArea.classList.remove('pdf-mode');
-                header.classList.add('hidden');
-            });
-        });
-
+        // 초기화 시 드롭다운 렌더링
+        updateStudentDropdown();
     </script>
 </body>
 </html>
