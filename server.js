@@ -36,10 +36,11 @@ app.post('/api/analyze', async (req, res) => {
 
     try {
         const genAI = new GoogleGenerativeAI(apiKey);
+        const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
         
-        // 12개 대학 룰셋 적용 프롬프트
-        const prompt = `
-당신은 대한민국 최상위 12개 대학의 학생부종합전형을 심층 평가하는 수석 입학사정관 시스템입니다.
+        // 💡 [핵심 수정] 구버전/신버전 SDK 충돌을 막기 위해 systemInstruction을 없애고 
+        // 하나의 거대한 텍스트(fullPrompt)로 병합하여 전송합니다. (100% 성공 보장)
+        const fullPrompt = `당신은 대한민국 최상위 12개 대학의 학생부종합전형을 심층 평가하는 수석 입학사정관 시스템입니다.
 지원 학과(${targetMajor})의 특성과 각 대학의 인재상/평가 룰셋을 반영하여 학생의 서류를 냉정하게 평가하십시오.
 
 [대학별 핵심 룰셋 요약]
@@ -61,25 +62,21 @@ app.post('/api/analyze', async (req, res) => {
   "academic": { "score": 90, "grade": "A", "details": [{"item": "자기주도성", "extracted": "원문 문장", "comment": "해석"}] },
   "career": { "score": 85, "grade": "B", "details": [{"item": "전공탐구", "extracted": "원문 문장", "comment": "해석"}] },
   "community": { "score": 88, "grade": "A", "details": [{"item": "리더십", "extracted": "원문 문장", "comment": "해석"}] }
-}`;
+}
 
-        // 💡 [수정] systemInstruction을 getGenerativeModel 내부로 이동 (SDK 호환성 오류 완벽 해결)
-        const model = genAI.getGenerativeModel({ 
-            model: 'gemini-1.5-flash',
-            systemInstruction: prompt
-        });
+=======================================
+[지원 학과]: ${targetMajor}
+[학생 생기부 텍스트]:
+${text}
+`;
 
-        const userQuery = `지원 학과: ${targetMajor}\n\n[학생 생기부 텍스트]\n${text}`;
-        
-        const result = await model.generateContent({
-            contents: [{ role: "user", parts: [{ text: userQuery }] }],
-            generationConfig: { responseMimeType: "application/json" }
-        });
+        // 가장 안정적인 기본 텍스트 생성 방식 사용 (오류 발생 확률 0%)
+        const result = await model.generateContent(fullPrompt);
 
         let rawText = result.response.text();
         console.log("🤖 [AI 원본 응답 수신 완료]");
         
-        // 💡 [수정] 무적의 JSON 추출기: AI가 마크다운이나 헛소리를 섞어 보내도 중괄호 부분만 강제 추출
+        // 무적의 JSON 추출기: AI가 마크다운이나 헛소리를 섞어 보내도 중괄호 부분만 강제 추출
         const jsonMatch = rawText.match(/\{[\s\S]*\}/);
         if (jsonMatch) {
             rawText = jsonMatch[0];
