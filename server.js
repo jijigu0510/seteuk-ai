@@ -37,7 +37,7 @@ app.post('/api/analyze', async (req, res) => {
     try {
         const genAI = new GoogleGenerativeAI(apiKey);
         
-        // 💡 [수정] responseMimeType을 설정하여 무조건 JSON으로만 응답하도록 강제 (정규식 파싱 오류 원천 차단)
+        // 💡 [핵심] responseMimeType을 설정하여 무조건 JSON으로만 응답하도록 강제
         const model = genAI.getGenerativeModel({ 
             model: 'gemini-1.5-flash',
             generationConfig: {
@@ -79,20 +79,19 @@ ${text}
         const rawText = result.response.text();
         console.log("🤖 [AI 원본 응답 수신 완료]");
         
-        // 정규식 없이 바로 안전하게 파싱 가능 (generationConfig 설정 덕분)
         const parsedData = JSON.parse(rawText);
         console.log(`✅ [분석 파싱 완료] ${targetMajor} 맞춤 평가 성공`);
         res.json(parsedData);
 
     } catch (error) {
         console.error('❌ [Gemini API / 파싱 에러]:', error);
-        // JSON 파싱 에러인지 API 호출 에러인지 명확히 전달
         res.status(500).json({ error: `AI 분석 중 서버 오류 발생: ${error.message}` });
     }
 });
 
-// 💡 [수정] Express 5.x 표준 Catch-all 라우팅 문법 적용 (/.*/ 대신 '*')
-app.get('*', (req, res) => {
+// 💡 [수정] Express 5.x 라우팅 에러 해결: '*' 문자열 대신 정규식(/.*/) 사용
+// Express 5 에서는 '*' 단독 사용 시 'Missing parameter name' 에러가 발생합니다.
+app.get(/.*/, (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
