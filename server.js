@@ -64,7 +64,7 @@ app.post('/api/analyze', async (req, res) => {
 });
 
 // 루트 접속 시 index.html 띄우기
-app.get('*', (req, res) => {
+app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
