@@ -36,10 +36,15 @@ app.post('/api/analyze', async (req, res) => {
 
     try {
         const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
         
-        // 💡 [핵심 수정] 구버전/신버전 SDK 충돌을 막기 위해 systemInstruction을 없애고 
-        // 하나의 거대한 텍스트(fullPrompt)로 병합하여 전송합니다. (100% 성공 보장)
+        // 💡 [수정] responseMimeType을 설정하여 무조건 JSON으로만 응답하도록 강제 (정규식 파싱 오류 원천 차단)
+        const model = genAI.getGenerativeModel({ 
+            model: 'gemini-1.5-flash',
+            generationConfig: {
+                responseMimeType: "application/json"
+            }
+        });
+        
         const fullPrompt = `당신은 대한민국 최상위 12개 대학의 학생부종합전형을 심층 평가하는 수석 입학사정관 시스템입니다.
 지원 학과(${targetMajor})의 특성과 각 대학의 인재상/평가 룰셋을 반영하여 학생의 서류를 냉정하게 평가하십시오.
 
@@ -70,32 +75,24 @@ app.post('/api/analyze', async (req, res) => {
 ${text}
 `;
 
-        // 가장 안정적인 기본 텍스트 생성 방식 사용 (오류 발생 확률 0%)
         const result = await model.generateContent(fullPrompt);
-
-        let rawText = result.response.text();
+        const rawText = result.response.text();
         console.log("🤖 [AI 원본 응답 수신 완료]");
         
-        // 무적의 JSON 추출기: AI가 마크다운이나 헛소리를 섞어 보내도 중괄호 부분만 강제 추출
-        const jsonMatch = rawText.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-            rawText = jsonMatch[0];
-        } else {
-            throw new Error("AI가 유효한 JSON 데이터를 반환하지 않았습니다.");
-        }
-        
+        // 정규식 없이 바로 안전하게 파싱 가능 (generationConfig 설정 덕분)
         const parsedData = JSON.parse(rawText);
         console.log(`✅ [분석 파싱 완료] ${targetMajor} 맞춤 평가 성공`);
         res.json(parsedData);
 
     } catch (error) {
         console.error('❌ [Gemini API / 파싱 에러]:', error);
+        // JSON 파싱 에러인지 API 호출 에러인지 명확히 전달
         res.status(500).json({ error: `AI 분석 중 서버 오류 발생: ${error.message}` });
     }
 });
 
-// 루트 접속 및 모든 경로 처리 (새로고침 에러 방지 - Express 5.x 정규식 문법)
-app.get(/.*/, (req, res) => {
+// 💡 [수정] Express 5.x 표준 Catch-all 라우팅 문법 적용 (/.*/ 대신 '*')
+app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
